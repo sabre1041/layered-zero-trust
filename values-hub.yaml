@@ -8,12 +8,26 @@ clusterGroup:
     - keycloak-system:
         operatorGroup: true
         targetNamespace: keycloak-system
+    - keycloak:
+        operatorGroup: true
+        targetNamespace: keycloak-system
+    - openshift-compliance:
+        operatorGroup: true
+        targetNamespace: openshift-compliance
+        annotations:
+          openshift.io/cluster-monitoring: "true"
   subscriptions:
     rhbk:
       name: rhbk-operator
       namespace: keycloak-system
       channel: stable-v26.2
       catalogSource: redhat-marketplace
+    compliance-operator:
+      name: compliance-operator
+      namespace: openshift-compliance
+      channel: stable
+      catalogSource: redhat-marketplace
+
   projects:
     - hub
   # Explicitly mention the cluster-state based overrides we plan to use for this pattern.
