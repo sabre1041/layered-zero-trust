@@ -15,6 +15,10 @@ help:
 install: operator-deploy post-install ## installs the pattern and loads the secrets
 	@echo "Installed"
 
+.PHONY: install-verbose
+install-verbose: operator-deploy-verbose post-install ## installs the pattern with detailed progress information and component status
+	@echo "Verbose installation completed"
+
 .PHONY: post-install
 post-install: ## Post-install tasks
 	make load-secrets

@@ -82,6 +82,10 @@ preview-%:
 operator-deploy operator-upgrade: validate-prereq $(VALIDATE_ORIGIN) validate-cluster ## runs helm install
 	@common/scripts/deploy-pattern.sh $(NAME) $(PATTERN_INSTALL_CHART) $(HELM_OPTS)
 
+.PHONY: operator-deploy-verbose
+operator-deploy-verbose: validate-prereq $(VALIDATE_ORIGIN) validate-cluster ## runs helm install with detailed component status and confirmation
+	@common/scripts/deploy-pattern-verbose.sh $(NAME) $(PATTERN_INSTALL_CHART) $(HELM_OPTS)
+
 .PHONY: uninstall
 uninstall: ## runs helm uninstall
 	$(eval CSV := $(shell oc get subscriptions -n openshift-operators openshift-gitops-operator -ojsonpath={.status.currentCSV}))
