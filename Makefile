@@ -16,7 +16,7 @@ install: operator-deploy post-install ## installs the pattern and loads the secr
 	@echo "Installed"
 
 .PHONY: install-verbose
-install-verbose: operator-deploy-verbose post-install ## installs the pattern with detailed progress information and component status
+install-verbose: operator-deploy-verbose ## installs the pattern with detailed progress information and component status
 	@echo "Verbose installation completed"
 
 .PHONY: post-install
