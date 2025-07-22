@@ -5,7 +5,7 @@ set -o pipefail
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
+CYAN='\033[1;36m'  # Bright cyan - much better visibility on black terminals
 BOLD='\033[1m'
 NC='\033[0m' # No Color
 
@@ -16,9 +16,9 @@ declare -a FAILED_COMPONENTS
 # Function to print prominent messages
 print_header() {
     echo
-    echo -e "${BOLD}${BLUE}========================================${NC}"
-    echo -e "${BOLD}${BLUE} $1${NC}"
-    echo -e "${BOLD}${BLUE}========================================${NC}"
+    echo -e "${BOLD}${CYAN}========================================${NC}"
+    echo -e "${BOLD}${CYAN} $1${NC}"
+    echo -e "${BOLD}${CYAN}========================================${NC}"
     echo
 }
 
@@ -35,7 +35,7 @@ print_warning() {
 }
 
 print_info() {
-    echo -e "${BOLD}${BLUE}ℹ INFO: $1${NC}"
+    echo -e "${BOLD}${CYAN}ℹ INFO: $1${NC}"
 }
 
 
@@ -44,15 +44,15 @@ print_info() {
 list_components() {
     print_header "LAYERED ZERO TRUST PATTERN - COMPONENT INSTALLATION PLAN"
     
-    echo -e "${BOLD}The following components will be installed:${NC}"
+    print_info "The following components will be installed:"
     echo
-    echo -e "${BOLD}${YELLOW}OPERATORS (OpenShift Subscriptions):${NC}"
+    echo "OPERATORS (OpenShift Subscriptions):"
     echo "  1. OpenShift Cert Manager Operator (cert-manager-operator namespace)"
     echo "  2. Red Hat Build of Keycloak Operator (keycloak-system namespace)"  
     echo "  3. OpenShift Zero Trust Workload Identity Manager (zero-trust-workload-identity-manager namespace)"
     echo "  4. Compliance Operator (openshift-compliance namespace)"
     echo
-    echo -e "${BOLD}${YELLOW}APPLICATIONS (ArgoCD Applications):${NC}"
+    echo "APPLICATIONS (ArgoCD Applications):"
     echo "  5. HashiCorp Vault"
     echo "  6. Golang External Secrets Operator"
     echo "  7. Red Hat Keycloak"
@@ -60,10 +60,10 @@ list_components() {
     echo "  9. Zero Trust Workload Identity Manager - SPIRE/SPIFFE"
     echo "     (Applications will be dynamically discovered and monitored)"
     echo
-    echo -e "${BOLD}${YELLOW}POST-INSTALLATION:${NC}"
+    echo "POST-INSTALLATION:"
     echo " 10. Secrets Loading (configured backend)"
     echo
-    echo -e "${BOLD}${BLUE}PREREQUISITES:${NC}"
+    print_info "PREREQUISITES:"
     echo "  • OpenShift cluster with admin access"
     echo "  • Default StorageClass available"
     echo "  • Red Hat Marketplace access (for operators)"
@@ -73,7 +73,8 @@ list_components() {
 
 # Function to ask for confirmation
 ask_confirmation() {
-    echo -e "${BOLD}${YELLOW}Do you want to proceed with the installation? (y/N):${NC} "
+    echo
+    echo -ne "${BOLD}${YELLOW}Do you want to proceed with the installation? (y/N): ${NC}"
     read -r response
     case "$response" in
         [yY][eE][sS]|[yY]) 
@@ -255,30 +256,30 @@ print_summary() {
     local success_count=0
     local total_count=${#COMPONENT_STATUS[@]}
     
-    echo -e "${BOLD}Component Installation Results:${NC}"
+    print_info "Component Installation Results:"
     echo
     
     for status in "${COMPONENT_STATUS[@]}"; do
         IFS=':' read -r component result <<< "$status"
         if [[ "$result" == "SUCCESS" ]]; then
-            echo -e "  ${GREEN}✓${NC} $component"
+            print_success "$component"
             success_count=$((success_count + 1))
         else
-            echo -e "  ${RED}✗${NC} $component"
+            print_error "$component"
         fi
     done
     
     echo
-    echo -e "${BOLD}Statistics:${NC}"
+    print_info "Statistics:"
     echo "  Total components: $total_count"
-    echo -e "  Successful: ${GREEN}$success_count${NC}"
-    echo -e "  Failed: ${RED}$((total_count - success_count))${NC}"
+    echo "  Successful: $success_count"
+    echo "  Failed: $((total_count - success_count))"
     
     if [ ${#FAILED_COMPONENTS[@]} -gt 0 ]; then
         echo
-        echo -e "${BOLD}${RED}Failed Components Details:${NC}"
+        print_error "Failed Components Details:"
         for failure in "${FAILED_COMPONENTS[@]}"; do
-            echo -e "  ${RED}•${NC} $failure"
+            echo "  • $failure"
         done
         echo
         print_warning "Some components failed to install. Check the details above and ArgoCD console for more information."
