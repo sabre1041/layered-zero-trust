@@ -38,28 +38,7 @@ print_info() {
     echo -e "${BOLD}${BLUE}ℹ INFO: $1${NC}"
 }
 
-# Function to check if ArgoCD application is healthy
-check_app_status() {
-    local app_name=$1
-    local namespace=$2
-    local max_wait=${3:-300} # 5 minutes default
-    local wait_time=0
-    
-    while [ $wait_time -lt $max_wait ]; do
-        if oc get application.argoproj.io/$app_name -n $namespace >/dev/null 2>&1; then
-            local sync_status=$(oc get application.argoproj.io/$app_name -n $namespace -o jsonpath='{.status.sync.status}' 2>/dev/null)
-            local health_status=$(oc get application.argoproj.io/$app_name -n $namespace -o jsonpath='{.status.health.status}' 2>/dev/null)
-            
-            if [[ "$sync_status" == "Synced" && "$health_status" == "Healthy" ]]; then
-                return 0
-            fi
-        fi
-        sleep 10
-        wait_time=$((wait_time + 10))
-        echo -n "."
-    done
-    return 1
-}
+
 
 # Function to list all components that will be installed
 list_components() {
@@ -74,11 +53,12 @@ list_components() {
     echo "  4. Compliance Operator (openshift-compliance namespace)"
     echo
     echo -e "${BOLD}${YELLOW}APPLICATIONS (ArgoCD Applications):${NC}"
-    echo "  5. HashiCorp Vault (vault namespace)"
-    echo "  6. Golang External Secrets Operator (golang-external-secrets namespace)"
-    echo "  7. Red Hat Keycloak (keycloak-system namespace)"
-    echo "  8. Red Hat Cert Manager (cert-manager-operator namespace)" 
-    echo "  9. Zero Trust Workload Identity Manager - SPIRE/SPIFFE (zero-trust-workload-identity-manager namespace)"
+    echo "  5. HashiCorp Vault"
+    echo "  6. Golang External Secrets Operator"
+    echo "  7. Red Hat Keycloak"
+    echo "  8. Red Hat Cert Manager" 
+    echo "  9. Zero Trust Workload Identity Manager - SPIRE/SPIFFE"
+    echo "     (Applications will be dynamically discovered and monitored)"
     echo
     echo -e "${BOLD}${YELLOW}POST-INSTALLATION:${NC}"
     echo " 10. Secrets Loading (configured backend)"
@@ -206,35 +186,51 @@ check_operators() {
 check_applications() {
     print_header "MONITORING APPLICATION DEPLOYMENT"
     
-    local apps=(
-        "vault:openshift-gitops"
-        "golang-external-secrets:openshift-gitops"
-        "rh-keycloak:openshift-gitops"
-        "rh-cert-manager:openshift-gitops"
-        "zero-trust-workload-identity-manager:openshift-gitops"
-    )
-    
     # Wait a bit for ArgoCD to pick up the applications
     print_info "Waiting for ArgoCD to detect applications..."
     sleep 30
     
-    for app in "${apps[@]}"; do
-        IFS=':' read -r app_name app_namespace <<< "$app"
-        print_info "Checking application: $app_name"
+    # Dynamically discover all applications (same logic as argo-healthcheck)
+    print_info "Discovering ArgoCD applications..."
+    local apps_output=$(oc get applications.argoproj.io -A -o jsonpath='{range .items[*]}{@.metadata.namespace},{@.metadata.name}{"\n"}{end}' 2>/dev/null)
+    
+    if [ -z "$apps_output" ]; then
+        print_warning "No ArgoCD applications found yet. This might be normal if applications are still being created."
+        COMPONENT_STATUS+=("ArgoCD Applications:PENDING")
+        return
+    fi
+    
+    local total_apps=0
+    local healthy_apps=0
+    local failed_apps=0
+    
+    # Process each discovered application
+    while IFS= read -r app_line; do
+        if [ -z "$app_line" ]; then continue; fi
         
-        if check_app_status "$app_name" "$app_namespace" 600; then  # 10 minute timeout
-            print_success "Application $app_name deployed successfully"
+        IFS=',' read -r app_namespace app_name <<< "$app_line"
+        print_info "Checking application: $app_name in namespace $app_namespace"
+        
+        total_apps=$((total_apps + 1))
+        
+        # Get sync and health status (same as argo-healthcheck)
+        local sync_status=$(oc get -n "$app_namespace" applications.argoproj.io/"$app_name" -o jsonpath='{.status.sync.status}' 2>/dev/null || echo "Unknown")
+        local health_status=$(oc get -n "$app_namespace" applications.argoproj.io/"$app_name" -o jsonpath='{.status.health.status}' 2>/dev/null || echo "Unknown")
+        
+        if [[ "$sync_status" == "Synced" && "$health_status" == "Healthy" ]]; then
+            print_success "Application $app_name: Sync=$sync_status, Health=$health_status"
             COMPONENT_STATUS+=("$app_name Application:SUCCESS")
+            healthy_apps=$((healthy_apps + 1))
         else
-            print_error "Application $app_name deployment failed or timed out"
+            print_error "Application $app_name: Sync=$sync_status, Health=$health_status"
             COMPONENT_STATUS+=("$app_name Application:FAILED")
-            
-            # Get more details about the failure
-            local sync_status=$(oc get application.argoproj.io/$app_name -n $app_namespace -o jsonpath='{.status.sync.status}' 2>/dev/null || echo "Unknown")
-            local health_status=$(oc get application.argoproj.io/$app_name -n $app_namespace -o jsonpath='{.status.health.status}' 2>/dev/null || echo "Unknown")
             FAILED_COMPONENTS+=("$app_name Application - Sync: $sync_status, Health: $health_status")
+            failed_apps=$((failed_apps + 1))
         fi
-    done
+    done <<< "$apps_output"
+    
+    # Summary of application status
+    print_info "Application Summary: $healthy_apps/$total_apps healthy, $failed_apps failed"
 }
 
 # Function to load secrets
