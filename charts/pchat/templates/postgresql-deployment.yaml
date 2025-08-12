@@ -39,6 +39,7 @@ spec:
         - name: pchat-db
           containerPort: 5432
           protocol: TCP
+          targetPort: 5432
         securityContext:
           privileged: false
           allowPrivilegeEscalation: false
