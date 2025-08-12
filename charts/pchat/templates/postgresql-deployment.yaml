@@ -23,14 +23,14 @@ spec:
         image: registry.redhat.io/rhel8/postgresql-16
         imagePullPolicy: IfNotPresent
         env:
-        - name: POSTGRES_DB
+        - name: POSTGRESQL_DATABASE
           value: pchat
-        - name: POSTGRES_USER
+        - name: POSTGRESQL_USER
           valueFrom:
             secretKeyRef:
               name: pchat-db-secret
               key: username
-        - name: POSTGRES_PASSWORD
+        - name: POSTGRESQL_PASSWORD
           valueFrom:
             secretKeyRef:
               name: pchat-db-secret
