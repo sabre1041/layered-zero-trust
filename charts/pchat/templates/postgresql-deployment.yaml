@@ -36,7 +36,7 @@ spec:
               name: pchat-db-secret
               key: password
         ports:
-        - name: pchat-db
+        - name: 5432-tcp
           containerPort: 5432
           protocol: TCP
           targetPort: 5432
