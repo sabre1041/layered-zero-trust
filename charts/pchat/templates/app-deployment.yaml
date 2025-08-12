@@ -9,7 +9,7 @@ metadata:
   name: pchat
   namespace: pchat
 spec:
-  replicas: 0
+  replicas: 1
   revisionHistoryLimit: 3
   selector:
     matchLabels:
@@ -34,7 +34,6 @@ spec:
           privileged: false
           allowPrivilegeEscalation: false
           runAsNonRoot: true
-          runAsUser: 1001
           capabilities:
             drop:
               - ALL
