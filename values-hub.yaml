@@ -98,6 +98,14 @@ clusterGroup:
       overrides:
         - name: spire.clusterName
           value: hub
+    pchat:
+      name: pchat
+      namespace: pchat
+      project: hub
+      repoURL: https://github.com/posip-redhat/vp-sample-app-chart
+      chartVersion: main
+      path: "."
+
   imperative:
     # NOTE: We *must* use lists and not hashes. As hashes lose ordering once parsed by helm
     # The default schedule is every 10 minutes: imperative.schedule
