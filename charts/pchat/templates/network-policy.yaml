@@ -1,0 +1,11 @@
+kind: NetworkPolicy
+apiVersion: networking.k8s.io/v1
+metadata:
+  name: allow-tcp5432
+  namespace: pchat
+spec:
+  ingress:
+  - ports:
+    - protocol: TCP
+      port: 5432
+
