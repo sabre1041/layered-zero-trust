@@ -51,7 +51,7 @@ spec:
               name: pchat-db-secret
               key: password
         - name: QUARKUS_DATASOURCE_JDBC_URL
-          value: 'jdbc:postgresql://pchat-db.pchat.svc.cluster.local:5432/pchat'
+          value: 'jdbc:postgresql://localhost:5432/pchat'
         - name: QUARKUS_HTTP_HOST
           value: '0.0.0.0'
         - name: QUARKUS_HTTP_PORT
