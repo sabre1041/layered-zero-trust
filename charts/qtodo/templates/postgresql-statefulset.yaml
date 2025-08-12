@@ -29,16 +29,16 @@ spec:
         imagePullPolicy: IfNotPresent
         env:
         - name: POSTGRESQL_DATABASE
-          value: tasks
+          value: {{ .Values.postgresql.auth.database }}
         - name: POSTGRESQL_USER
           valueFrom:
             secretKeyRef:
-              name: qtodo-db-secret
+              name: {{ .Values.postgresql.auth.secretName }}
               key: username
         - name: POSTGRESQL_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: qtodo-db-secret
+              name: {{ .Values.postgresql.auth.secretName }}
               key: password
         ports:
         - containerPort: 5432

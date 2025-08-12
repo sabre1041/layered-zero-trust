@@ -43,15 +43,15 @@ spec:
         - name: QUARKUS_DATASOURCE_USERNAME
           valueFrom:
             secretKeyRef:
-              name: qtodo-db-secret
+              name: {{ .Values.postgresql.auth.secretName }}
               key: username
         - name: QUARKUS_DATASOURCE_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: qtodo-db-secret
+              name: {{ .Values.postgresql.auth.secretName }}
               key: password
         - name: QUARKUS_DATASOURCE_JDBC_URL
-          value: 'jdbc:postgresql://qtodo-db.qtodo.svc.cluster.local:5432/tasks'
+          value: 'jdbc:postgresql://qtodo-db.qtodo.svc.cluster.local:5432/{{ .Values.postgresql.auth.database }}'
         - name: QUARKUS_HTTP_HOST
           value: '0.0.0.0'
         - name: QUARKUS_HTTP_PORT

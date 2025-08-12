@@ -1,4 +1,8 @@
 # Default values for qtodo
+global:
+  secretStore:
+    name: "vault-backend"
+    kind: "ClusterSecretStore"
 
 # QTodo application configuration
 app:
@@ -10,11 +14,7 @@ postgresql:
 
   # Database configuration
   auth:
+    secretName: qtodo-db-secret
     database: tasks
     username: qtodo_user
-    # This is intentionally included here as an antipattern to be addressed
-    password: RedH@tPassw0rd
-  
-
-  
-
+    passwordVaultKey: secret/data/global/qtodo
