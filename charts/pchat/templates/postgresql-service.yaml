@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    argocd.argoproj.io/compare-options: IgnoreExtraneous
+    argocd.argoproj.io/sync-wave: '10'
+  labels:
+    app: pchat-db
+  name: pchat-db
+  namespace: pchat
+spec:
+  ports:
+  - name: 5432-tcp
+    port: 5432
+    protocol: TCP
+    targetPort: 5432
+  selector:
+    app: pchat-db
+    deploymentconfig: pchat-db
+  sessionAffinity: None
+  type: ClusterIP
+

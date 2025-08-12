@@ -1,0 +1,20 @@
+apiVersion: v2
+name: pchat
+description: A Helm chart for PChat - Persistent WebSocket Chat Application
+type: application
+version: 0.0.1
+appVersion: "1.0.0"
+# Will want to change the application repo to move under a Red Hat accessible org (possibly https://github.com/validatedpatterns-demos)
+sources:
+  - https://github.com/posip-redhat/pchat
+maintainers:
+  - name: Zero Trust Valdated Patterns Team
+    email: ztvp-arch-group@redhat.comcom
+keywords:
+  - chat
+  - websocket
+  - quarkus
+  - postgresql
+  - pattern
+annotations:
+  category: Application

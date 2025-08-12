@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    argocd.argoproj.io/compare-options: IgnoreExtraneous
+    argocd.argoproj.io/sync-wave: '10'
+  labels:
+    app: pchat-db
+  name: pchat-db
+  namespace: pchat
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pchat-db
+  template:
+    metadata:
+      labels:
+        app: pchat-db
+    spec:
+      containers:
+      - name: postgres
+        image: registry.redhat.io/rhel8/postgresql-16
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: POSTGRES_DB
+          value: pchat
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: pchat-db-secret
+              key: username
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: pchat-db-secret
+              key: password
+        ports:
+        - name: pchat-db
+          containerPort: 5432
+          protocol: TCP
+        securityContext:
+          privileged: false
+          allowPrivilegeEscalation: false
+          runAsNonRoot: true
+          capabilities:
+            drop:
+              - ALL
+          seccompProfile:
+            type: RuntimeDefault
+        volumeMounts:
+        - name: postgres-storage
+          mountPath: /var/lib/postgresql/data
+      volumes:
+      - name: postgres-storage
+        emptyDir: {}
+

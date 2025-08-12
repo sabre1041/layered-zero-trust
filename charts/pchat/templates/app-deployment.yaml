@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    argocd.argoproj.io/compare-options: IgnoreExtraneous
+    argocd.argoproj.io/sync-wave: '20'
+  labels:
+    application: pchat
+  name: pchat
+  namespace: pchat
+spec:
+  replicas: 1
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      deploymentconfig: pchat
+  template:
+    metadata:
+      labels:
+        app: pchat
+        deploymentconfig: pchat
+      name: pchat
+    spec:
+      containers:
+      - name: pchat
+        # Fully expect to change this to somewhere else. https://github.com/posip-redhat/pchat repo has container build instructions
+        image: quay.io/posip-lab/pchat:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8080
+          name: http
+          protocol: TCP
+        securityContext:
+          privileged: false
+          allowPrivilegeEscalation: false
+          runAsNonRoot: true
+          runAsUser: 1001
+          capabilities:
+            drop:
+              - ALL
+          seccompProfile:
+            type: RuntimeDefault
+        env:
+        - name: QUARKUS_DATASOURCE_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: pchat-db-secret
+              key: username
+        - name: QUARKUS_DATASOURCE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: pchat-db-secret
+              key: password
+        - name: QUARKUS_DATASOURCE_JDBC_URL
+          value: 'jdbc:postgresql://pchat-db:5432/pchat'
+        - name: QUARKUS_HTTP_HOST
+          value: '0.0.0.0'
+        - name: QUARKUS_HTTP_PORT
+          value: '8080'
+        - name: QUARKUS_HIBERNATE_ORM_DATABASE_GENERATION
+          value: 'drop-and-create'
+        resources: {}

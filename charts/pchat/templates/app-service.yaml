@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    argocd.argoproj.io/compare-options: IgnoreExtraneous
+    argocd.argoproj.io/sync-wave: '20'
+  labels:
+    app: pchat
+  name: pchat
+  namespace: pchat
+spec:
+  ports:
+  - name: 8080-tcp
+    port: 8080
+    protocol: TCP
+    targetPort: 8080
+  selector:
+    app: pchat
+    deploymentconfig: pchat
+  sessionAffinity: None
+  type: ClusterIP

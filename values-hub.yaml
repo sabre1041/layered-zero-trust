@@ -4,6 +4,7 @@ clusterGroup:
   namespaces:
     - open-cluster-management
     - vault
+    - pchat
     - golang-external-secrets
     - keycloak-system:
         operatorGroup: true
@@ -102,7 +103,7 @@ clusterGroup:
       name: pchat
       namespace: pchat
       project: hub
-      repoURL: https://github.com/posip-redhat/vp-sample-app-chart
+      repoURL: charts/pchat
       chartVersion: main
       path: "."
 
