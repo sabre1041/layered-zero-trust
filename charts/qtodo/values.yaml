@@ -1,17 +1,17 @@
-# Default values for pchat
+# Default values for qtodo
 
-# PChat application configuration
+# QTodo application configuration
 app:
-  name: pchat
+  name: qtodo
 
 # PostgreSQL database configuration
 postgresql:
-  name: pchat-db
+  name: qtodo-db
 
   # Database configuration
   auth:
-    database: pchat
-    username: pchat_user
+    database: tasks
+    username: qtodo_user
     # This is intentionally included here as an antipattern to be addressed
     password: RedH@tPassw0rd
   

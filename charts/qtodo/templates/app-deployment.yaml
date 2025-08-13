@@ -5,26 +5,26 @@ metadata:
     argocd.argoproj.io/compare-options: IgnoreExtraneous
     argocd.argoproj.io/sync-wave: '20'
   labels:
-    application: pchat
-  name: pchat
-  namespace: pchat
+    application: qtodo
+  name: qtodo
+  namespace: qtodo
 spec:
   replicas: 1
   revisionHistoryLimit: 3
   selector:
     matchLabels:
-      deploymentconfig: pchat
+      deploymentconfig: qtodo
   template:
     metadata:
       labels:
-        app: pchat
-        deploymentconfig: pchat
-      name: pchat
+        app: qtodo
+        deploymentconfig: qtodo
+      name: qtodo
     spec:
       containers:
-      - name: pchat
-        # Fully expect to change this to somewhere else. https://github.com/posip-redhat/pchat repo has container build instructions
-        image: quay.io/posip-lab/pchat:latest
+      - name: qtodo
+        # Fully expect to change this to somewhere else. https://github.com/posip-redhat/qtodo repo has container build instructions
+        image: quay.io/posip-lab/qtodo-ubi10:latest
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8080
@@ -43,15 +43,15 @@ spec:
         - name: QUARKUS_DATASOURCE_USERNAME
           valueFrom:
             secretKeyRef:
-              name: pchat-db-secret
+              name: qtodo-db-secret
               key: username
         - name: QUARKUS_DATASOURCE_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: pchat-db-secret
+              name: qtodo-db-secret
               key: password
         - name: QUARKUS_DATASOURCE_JDBC_URL
-          value: 'jdbc:postgresql://pchat-db.pchat.svc.cluster.local:5432/pchat'
+          value: 'jdbc:postgresql://qtodo-db.qtodo.svc.cluster.local:5432/tasks'
         - name: QUARKUS_HTTP_HOST
           value: '0.0.0.0'
         - name: QUARKUS_HTTP_PORT

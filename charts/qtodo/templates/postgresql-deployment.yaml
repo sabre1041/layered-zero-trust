@@ -5,18 +5,18 @@ metadata:
     argocd.argoproj.io/compare-options: IgnoreExtraneous
     argocd.argoproj.io/sync-wave: '10'
   labels:
-    app: pchat-db
-  name: pchat-db
-  namespace: pchat
+    app: qtodo-db
+  name: qtodo-db
+  namespace: qtodo
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: pchat-db
+      app: qtodo-db
   template:
     metadata:
       labels:
-        app: pchat-db
+        app: qtodo-db
     spec:
       containers:
       - name: postgres
@@ -24,16 +24,16 @@ spec:
         imagePullPolicy: IfNotPresent
         env:
         - name: POSTGRESQL_DATABASE
-          value: pchat
+          value: tasks
         - name: POSTGRESQL_USER
           valueFrom:
             secretKeyRef:
-              name: pchat-db-secret
+              name: qtodo-db-secret
               key: username
         - name: POSTGRESQL_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: pchat-db-secret
+              name: qtodo-db-secret
               key: password
         ports:
         - containerPort: 5432

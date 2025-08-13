@@ -5,9 +5,9 @@ metadata:
     argocd.argoproj.io/compare-options: IgnoreExtraneous
     argocd.argoproj.io/sync-wave: '10'
   labels:
-    app: pchat-db
-  name: pchat-db
-  namespace: pchat
+    app: qtodo-db
+  name: qtodo-db
+  namespace: qtodo
 spec:
   ports:
   - name: 5432-tcp
@@ -15,8 +15,8 @@ spec:
     protocol: TCP
     targetPort: 5432
   selector:
-    app: pchat-db
-    deploymentconfig: pchat-db
+    app: qtodo-db
+    deploymentconfig: qtodo-db
   sessionAffinity: None
   type: ClusterIP
 

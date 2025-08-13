@@ -2,13 +2,13 @@ apiVersion: route.openshift.io/v1
 kind: Route
 metadata:
   labels:
-    app: pchat
-  name: pchat
+    app: qtodo
+  name: qtodo
 spec:
   port:
     targetPort: 8080-tcp
   to:
     kind: Service
-    name: pchat
+    name: qtodo
     weight: 100
   wildcardPolicy: None
