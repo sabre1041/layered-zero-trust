@@ -16,6 +16,5 @@ spec:
     targetPort: 8080
   selector:
     app: pchat
-    deploymentconfig: pchat
   sessionAffinity: None
   type: ClusterIP
