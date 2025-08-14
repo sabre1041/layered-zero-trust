@@ -9,7 +9,7 @@ sources:
   - https://github.com/posip-redhat/qtodo
 maintainers:
   - name: Zero Trust Valdated Patterns Team
-    email: ztvp-arch-group@redhat.comcom
+    email: ztvp-arch-group@redhat.com
 keywords:
   - web
   - todo

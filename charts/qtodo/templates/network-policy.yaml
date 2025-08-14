@@ -8,6 +8,8 @@ spec:
     - namespaceSelector:
         matchLabels:
           policy-group.network.openshift.io/ingress: ""
-  podSelector: {}
+  podSelector:
+    matchLabels:
+      app: qtodo
   policyTypes:
   - Ingress

@@ -5,6 +5,9 @@ metadata:
   name: allow-tcp5432
   namespace: qtodo
 spec:
+  podSelector:
+    matchLabels:
+      app: qtodo-db
   ingress:
   - ports:
     - protocol: TCP
