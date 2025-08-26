@@ -109,6 +109,12 @@ clusterGroup:
           value: "true"
         - name: app.spire.enabled
           value: "true"
+        - name: app.vault.url
+          value: https://vault.vault.svc.cluster.local:8200
+        - name: app.vault.role
+          value: dev
+        - name: app.vault.secretPath
+          value: secret/data/global/qtodo
 
 
 

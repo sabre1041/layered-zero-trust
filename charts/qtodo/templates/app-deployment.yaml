@@ -19,6 +19,7 @@ spec:
         checksum/app-configmap-envvars: {{ include (print $.Template.BasePath "/app-config-env.yaml") . | sha256sum }}
 {{- if eq .Values.app.spire.enabled true }}
         checksum/app-spiffe-helper-config: {{ include (print $.Template.BasePath "/spiffe-helper-config.yaml") . | sha256sum }}
+        checksum/app-spiffe-vault-client-config: {{ include (print $.Template.BasePath "/spiffe-vault-client-config.yaml") . | sha256sum }}
 {{- end }}
       labels:
         app: qtodo
@@ -28,7 +29,8 @@ spec:
       containers:
 {{- if eq .Values.app.spire.enabled true }}
       - name: spiffe-helper
-        image: 'ghcr.io/spiffe/spiffe-helper:0.10.1'
+        image: {{ .Values.app.images.spiffeHelper.name }}:{{ .Values.app.images.spiffeHelper.tag }}
+        imagePullPolicy: {{ .Values.app.images.spiffeHelper.pullPolicy }}
         args:
           - '-config'
           - /etc/helper.conf
@@ -43,11 +45,40 @@ spec:
             mountPath: /spiffe-workload-api
           - name: svids
             mountPath: /svids
+      - name: spiffe-vault-client
+        image: {{ .Values.app.images.spiffeVaultClient.name }}:{{ .Values.app.images.spiffeVaultClient.tag }}
+        imagePullPolicy: {{ .Values.app.images.spiffeVaultClient.pullPolicy }}
+        command:
+        - python3
+        - /opt/app-root/src/spiffe-vault-client.py
+        resources: {}
+        securityContext: {}
+        env:
+        - name: VAULT_URL
+          value: {{ .Values.app.vault.url }}
+        - name: VAULT_ROLE
+          value: {{ .Values.app.vault.role }}
+        - name: VAULT_SECRET_PATH
+          value: {{ .Values.app.vault.secretPath }}
+        - name: DB_USERNAME
+          value: {{ .Values.postgresql.auth.username }}
+        - name: CREDENTIALS_FILE
+          value: /run/secrets/db-credentials/credentials.properties
+        - name: JWT_TOKEN_FILE
+          value: /svids/jwt.token
+        volumeMounts:
+        - name: svids
+          mountPath: /svids
+          readOnly: true
+        - name: db-credentials
+          mountPath: /run/secrets/db-credentials
+        - name: spiffe-vault-client
+          mountPath: /opt/app-root/src
+          readOnly: true
 {{- end }}
       - name: qtodo
-        image: quay.io/hybridcloudpatterns/qtodo:latest
-        # Modified to Always to force a pull so we can test changes to the container image without requiring manual deletion of images or restarts of argo
-        imagePullPolicy: Always
+        image: {{ .Values.app.images.main.name }}:{{ .Values.app.images.main.tag }}
+        imagePullPolicy: {{ .Values.app.images.main.pullPolicy }}
         ports:
         - containerPort: 8080
           name: http
@@ -85,8 +116,8 @@ spec:
           value: 'drop-and-create'
 {{- if eq .Values.app.spire.enabled true }}
         volumeMounts:
-          - name: svids
-            mountPath: /svids
+          - name: db-credentials
+            mountPath: /run/secrets/db-credentials
 {{- end }}
         resources: {}
       serviceAccountName: qtodo
@@ -102,4 +133,9 @@ spec:
           csi:
             driver: csi.spiffe.io
             readOnly: true
+        - name: db-credentials
+          emptyDir: {}
+        - name: spiffe-vault-client
+          configMap:
+            name: spiffe-vault-client
 {{- end }}
