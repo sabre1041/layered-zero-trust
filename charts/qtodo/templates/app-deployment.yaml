@@ -19,16 +19,65 @@ spec:
         checksum/app-configmap-envvars: {{ include (print $.Template.BasePath "/app-config-env.yaml") . | sha256sum }}
 {{- if eq .Values.app.spire.enabled true }}
         checksum/app-spiffe-helper-config: {{ include (print $.Template.BasePath "/spiffe-helper-config.yaml") . | sha256sum }}
+        checksum/app-spiffe-vault-client-config: {{ include (print $.Template.BasePath "/spiffe-vault-client-config.yaml") . | sha256sum }}
 {{- end }}
       labels:
         app: qtodo
         deployment: qtodo
       name: qtodo
     spec:
-      containers:
 {{- if eq .Values.app.spire.enabled true }}
+      initContainers:
+      - name: init-spiffe-helper
+        image: {{ .Values.app.images.spiffeHelper.name }}:{{ .Values.app.images.spiffeHelper.tag }}
+        imagePullPolicy: {{ .Values.app.images.spiffeHelper.pullPolicy }}
+        args:
+          - '-config'
+          - /etc/helper.conf
+          - '-daemon-mode=false'
+        volumeMounts:
+          - name: spiffe-helper-config
+            readOnly: true
+            mountPath: /etc/helper.conf
+            subPath: helper.conf
+          - name: spiffe-workload-api
+            readOnly: true
+            mountPath: /spiffe-workload-api
+          - name: svids
+            mountPath: /svids
+      - name: init-spiffe-vault-client
+        image: {{ .Values.app.images.spiffeVaultClient.name }}:{{ .Values.app.images.spiffeVaultClient.tag }}
+        imagePullPolicy: {{ .Values.app.images.spiffeVaultClient.pullPolicy }}
+        command:
+          - python3
+          - /opt/app-root/src/spiffe-vault-client.py
+          - '--init'
+        env:
+          - name: VAULT_URL
+            value: {{ .Values.app.vault.url }}
+          - name: VAULT_ROLE
+            value: {{ .Values.app.vault.role }}
+          - name: VAULT_SECRET_PATH
+            value: {{ .Values.app.vault.secretPath }}
+          - name: DB_USERNAME
+            value: {{ .Values.postgresql.auth.username }}
+          - name: CREDENTIALS_FILE
+            value: /run/secrets/db-credentials/credentials.properties
+          - name: JWT_TOKEN_FILE
+            value: /svids/jwt.token
+        volumeMounts:
+          - name: svids
+            mountPath: /svids
+          - name: db-credentials
+            mountPath: /run/secrets/db-credentials
+          - name: spiffe-vault-client
+            mountPath: /opt/app-root/src
+{{- end }}
+      containers:
+{{- if and .Values.app.spire.enabled .Values.app.spire.sidecars }}
       - name: spiffe-helper
-        image: 'ghcr.io/spiffe/spiffe-helper:0.10.1'
+        image: {{ .Values.app.images.spiffeHelper.name }}:{{ .Values.app.images.spiffeHelper.tag }}
+        imagePullPolicy: {{ .Values.app.images.spiffeHelper.pullPolicy }}
         args:
           - '-config'
           - /etc/helper.conf
@@ -43,11 +92,40 @@ spec:
             mountPath: /spiffe-workload-api
           - name: svids
             mountPath: /svids
+      - name: spiffe-vault-client
+        image: {{ .Values.app.images.spiffeVaultClient.name }}:{{ .Values.app.images.spiffeVaultClient.tag }}
+        imagePullPolicy: {{ .Values.app.images.spiffeVaultClient.pullPolicy }}
+        command:
+        - python3
+        - /opt/app-root/src/spiffe-vault-client.py
+        resources: {}
+        securityContext: {}
+        env:
+        - name: VAULT_URL
+          value: {{ .Values.app.vault.url }}
+        - name: VAULT_ROLE
+          value: {{ .Values.app.vault.role }}
+        - name: VAULT_SECRET_PATH
+          value: {{ .Values.app.vault.secretPath }}
+        - name: DB_USERNAME
+          value: {{ .Values.postgresql.auth.username }}
+        - name: CREDENTIALS_FILE
+          value: /run/secrets/db-credentials/credentials.properties
+        - name: JWT_TOKEN_FILE
+          value: /svids/jwt.token
+        volumeMounts:
+        - name: svids
+          mountPath: /svids
+          readOnly: true
+        - name: db-credentials
+          mountPath: /run/secrets/db-credentials
+        - name: spiffe-vault-client
+          mountPath: /opt/app-root/src
+          readOnly: true
 {{- end }}
       - name: qtodo
-        image: quay.io/hybridcloudpatterns/qtodo:latest
-        # Modified to Always to force a pull so we can test changes to the container image without requiring manual deletion of images or restarts of argo
-        imagePullPolicy: Always
+        image: {{ .Values.app.images.main.name }}:{{ .Values.app.images.main.tag }}
+        imagePullPolicy: {{ .Values.app.images.main.pullPolicy }}
         ports:
         - containerPort: 8080
           name: http
@@ -65,6 +143,15 @@ spec:
           seccompProfile:
             type: RuntimeDefault
         env:
+        - name: QUARKUS_DATASOURCE_JDBC_URL
+          value: 'jdbc:postgresql://qtodo-db:5432/{{ .Values.postgresql.auth.database }}'
+        - name: QUARKUS_HTTP_HOST
+          value: '0.0.0.0'
+        - name: QUARKUS_HTTP_PORT
+          value: '8080'
+        - name: QUARKUS_HIBERNATE_ORM_DATABASE_GENERATION
+          value: 'drop-and-create'
+{{- if eq .Values.app.spire.enabled false }}
         - name: QUARKUS_DATASOURCE_USERNAME
           valueFrom:
             secretKeyRef:
@@ -75,18 +162,14 @@ spec:
             secretKeyRef:
               name: {{ .Values.postgresql.auth.secretName }}
               key: password
-        - name: QUARKUS_DATASOURCE_JDBC_URL
-          value: 'jdbc:postgresql://qtodo-db:5432/{{ .Values.postgresql.auth.database }}'
-        - name: QUARKUS_HTTP_HOST
-          value: '0.0.0.0'
-        - name: QUARKUS_HTTP_PORT
-          value: '8080'
-        - name: QUARKUS_HIBERNATE_ORM_DATABASE_GENERATION
-          value: 'drop-and-create'
+{{- else }}
+        - name: QUARKUS_CONFIG_LOCATIONS
+          value: file:/run/secrets/db-credentials/credentials.properties
+{{- end }}
 {{- if eq .Values.app.spire.enabled true }}
         volumeMounts:
-          - name: svids
-            mountPath: /svids
+          - name: db-credentials
+            mountPath: /run/secrets/db-credentials
 {{- end }}
         resources: {}
       serviceAccountName: qtodo
@@ -102,4 +185,9 @@ spec:
           csi:
             driver: csi.spiffe.io
             readOnly: true
+        - name: db-credentials
+          emptyDir: {}
+        - name: spiffe-vault-client
+          configMap:
+            name: spiffe-vault-client
 {{- end }}
