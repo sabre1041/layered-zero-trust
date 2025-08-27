@@ -1,3 +1,12 @@
+# This spire config is required to fix a bug in the zero-trust-workload-identity-manager operator
+spire:
+  oidcDiscoveryProvider:
+    ingress:
+      enabled: true
+      annotations:
+        route.openshift.io/termination: reencrypt
+        route.openshift.io/destination-ca-certificate-secret: spire-bundle
+
 clusterGroup:
   name: hub
   isHubCluster: true
@@ -75,6 +84,17 @@ clusterGroup:
       project: hub
       chart: hashicorp-vault
       chartVersion: 0.1.*
+      jwt:
+        enabled: true
+        oidcDiscoveryUrl: https://spire-spiffe-oidc-discovery-provider.zero-trust-workload-identity-manager.svc.cluster.local
+        oidcDiscoveryCa: /run/secrets/kubernetes.io/serviceaccount/service-ca.crt
+        defaultRole: qtodo
+        roles:
+          - name: qtodo
+            audience: qtodo
+            subject: spiffe://apps.{{ $.Values.global.clusterDomain }}/ns/qtodo/sa/qtodo
+            policies:
+              - global-secret
     golang-external-secrets:
       name: golang-external-secrets
       namespace: golang-external-secrets

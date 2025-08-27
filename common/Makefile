@@ -133,6 +133,11 @@ load-iib: ## CI target to install Index Image Bundles
 token-kubeconfig: ## Create a local ~/.kube/config with password (not usually needed)
 	common/scripts/write-token-kubeconfig.sh
 
+.PHONY: vault-config-jwt
+vault-config-jwt: ## Configure Vault JWT authentication
+	common/scripts/vault-utils.sh vault_jwt $(NAME)
+
+
 ##@ Validation Tasks
 
 # We only check the remote ssh git branch's existance if we're not running inside a container
