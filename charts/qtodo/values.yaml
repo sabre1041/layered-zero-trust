@@ -8,6 +8,20 @@ global:
 # QTodo application configuration
 app:
   name: qtodo
+  images:
+    main:
+      name: quay.io/hybridcloudpatterns/qtodo
+      tag: latest
+      # Modified to Always to force a pull so we can test changes to the container image without requiring manual deletion of images or restarts of argo
+      pullPolicy: Always
+    spiffeHelper:
+      name: ghcr.io/spiffe/spiffe-helper
+      tag: 0.10.1
+      pullPolicy: IfNotPresent
+    spiffeVaultClient:
+      name: registry.redhat.io/ubi9/python-311
+      tag: latest
+      pullPolicy: IfNotPresent
 
   oidc:
     enabled: false
@@ -20,6 +34,7 @@ app:
   
   spire:
     enabled: false
+    sidecars: true
     audiences:
       - qtodo
 

@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: spiffe-vault-client
+data:
+  spiffe-vault-client.py: |
+{{- .Files.Get "files/spiffe-vault-client.py" | nindent 4 }}
