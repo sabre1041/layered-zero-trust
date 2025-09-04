@@ -15,8 +15,7 @@ settingsRef:
   name: {{ .Values.compliance.scanSetting.name }}
 # Profiles to bind to this scan setting
 profiles:
-  {{- range .Values.compliance.scanSettingBinding.profiles }}
-    kind: {{ .kind }}
-    name: {{ .name }}
-  {{- end }}
+  - name: {{ .Values.compliance.scanSettingBinding.profile }}
+    kind: Profile
+    apiGroup: compliance.openshift.io/v1alpha1
 debug: true
