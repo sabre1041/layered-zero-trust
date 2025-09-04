@@ -41,11 +41,3 @@ compliance:
     image: "registry.redhat.io/rhel8/toolbox:latest"
     # Mount path for scan results
     mountPath: "/compliance-results"
-    # Resources for viewer pod
-    resources:
-      limits:
-        memory: "512Mi" 
-        cpu: "500m"
-      requests:
-        memory: "256Mi"
-        cpu: "250m"
