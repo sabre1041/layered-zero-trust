@@ -78,9 +78,18 @@ clusterGroup:
   #   - '/overrides/values-{{ $.Values.global.hubClusterDomain }}.yaml'
   #   - '/overrides/values-{{ $.Values.global.localClusterDomain }}.yaml'
   applications:
+    compliance-scanning:
+      name: compliance-scanning
+      namespace: openshift-compliance
+      annotations:
+        argocd.argoproj.io/sync-wave: '-30'
+      project: hub
+      path: charts/compliance-scanning
     vault:
       name: vault
       namespace: vault
+      annotations:
+        argocd.argoproj.io/sync-wave: '-20'
       project: hub
       chart: hashicorp-vault
       chartVersion: 0.1.*
@@ -98,22 +107,30 @@ clusterGroup:
     golang-external-secrets:
       name: golang-external-secrets
       namespace: golang-external-secrets
+      annotations:
+        argocd.argoproj.io/sync-wave: '-20'
       project: hub
       chart: golang-external-secrets
       chartVersion: 0.1.*
     rh-keycloak:
       name: rh-keycloak
       namespace: keycloak-system
+      annotations:
+        argocd.argoproj.io/sync-wave: '-20'
       project: hub
       path: charts/keycloak
     rh-cert-manager:
       name: rh-cert-manager
       namespace: cert-manager-operator
+      annotations:
+        argocd.argoproj.io/sync-wave: '-20'
       project: hub
       path: charts/certmanager
     zero-trust-workload-identity-manager:
       name: zero-trust-workload-identity-manager
       namespace: zero-trust-workload-identity-manager
+      annotations:
+        argocd.argoproj.io/sync-wave: '-10'
       project: hub
       path: charts/zero-trust-workload-identity-manager
       overrides:
@@ -122,6 +139,8 @@ clusterGroup:
     qtodo:
       name: qtodo
       namespace: qtodo
+      annotations:
+        argocd.argoproj.io/sync-wave: '0'
       project: hub
       path: charts/qtodo
       overrides:
