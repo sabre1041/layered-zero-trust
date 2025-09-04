@@ -10,7 +10,6 @@ metadata:
   labels:
     app.kubernetes.io/component: compliance-scan-binding
 settingsRef:
-  apiVersion: compliance.openshift.io/v1alpha1
   kind: ScanSetting
   name: {{ .Values.compliance.scanSetting.name }}
 # Profiles to bind to this scan setting
