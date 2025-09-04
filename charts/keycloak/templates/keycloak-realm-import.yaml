@@ -26,5 +26,9 @@ spec:
       secret:
         name: {{ $.Values.keycloak.users.secretName }}
         key: qtodo-user1-password
+    QTODO_CLIENT_SECRET:
+      secret:
+        name: {{ $.Values.keycloak.users.secretName }}
+        key: qtodo-client-secret
 {{- end }}
 {{- end }}
