@@ -19,8 +19,8 @@ compliance:
   # (Future look at creating a TailoredProfile for ZT)
   scanSettingBinding:
     name: compliance-scan-binding
-    # Profile to scan - ocp4-moderate, ocp4-cis, rhcos4-moderate,...
-    profile: "ocp4-moderate"
+    # Profile in oc get profiles.compliance -n openshift-compliance
+    profile: "rhcos4-stig"
   # Storage configuration for scan results
   storage:
     # Enable PVC creation
