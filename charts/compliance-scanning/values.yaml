@@ -8,7 +8,7 @@ compliance:
     # Enable automatic remediation
     autoApplyRemediations: true
     # Schedule scan (cron format) - empty means manual trigger
-    schedule: ""
+    schedule: "02***"
     # Set scanning tolerations
     scanTolerations:
       - key: "node-role.kubernetes.io/master"
