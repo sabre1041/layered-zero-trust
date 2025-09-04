@@ -14,14 +14,6 @@ compliance:
       - key: "node-role.kubernetes.io/master"
         operator: "Exists"
         effect: "NoSchedule"
-    # Resources for scanner pods
-    resources:
-      limits:
-        memory: "1Gi"
-        cpu: "1000m"
-      requests:
-        memory: "512Mi"
-        cpu: "500m"
     # Node selector for scanner pods
     nodeSelector: {}
   # (Future look at creating a TailoredProfile for ZT)
