@@ -23,8 +23,6 @@ compliance:
     profiles:
       - name: "ocp4-moderate"
         kind: "Profile"
-    # Set debug logging
-    debug: true
   # Storage configuration for scan results
   storage:
     # Enable PVC creation
