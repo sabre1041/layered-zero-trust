@@ -7,7 +7,7 @@ compliance:
     name: compliance-scan-setting
     # Enable automatic remediation
     autoApplyRemediations: true
-    # Schedule scan (cron format) - empty means manual trigger
+    # Schedule scan (cron format daily at 0200)
     schedule: "02***"
     # Set scanning tolerations
     scanTolerations:
