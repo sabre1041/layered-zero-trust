@@ -35,9 +35,4 @@ spec:
       claimName: {{ .Values.compliance.storage.pvc.name }}
   # Restart policy
   restartPolicy: Always
-  # Tolerations to potentially run on master nodes if needed
-  tolerations:
-  - key: "node-role.kubernetes.io/master"
-    operator: "Exists"
-    effect: "NoSchedule"
 {{- end }}
