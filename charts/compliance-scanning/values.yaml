@@ -30,3 +30,11 @@ compliance:
       storageClass: ""
       size: "2Gi"
       accessMode: "ReadWriteOnce"
+
+hardening:
+  # etcd encryption at rest configuration
+  etcdEncryption:
+    # Enable etcd encryption by patching the existing APIServer resource
+    enabled: false
+    # Encryption type: aescbc, aesgcm, or kms v2
+    type: "aescbc"
