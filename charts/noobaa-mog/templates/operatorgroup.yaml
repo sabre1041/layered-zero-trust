@@ -1,0 +1,11 @@
+---
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: openshift-storage-operatorgroup
+  namespace: {{ .Values.noobaa.namespace }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"  # Layer 1: Create OperatorGroup
+spec:
+  targetNamespaces:
+  - {{ .Values.noobaa.namespace }}
