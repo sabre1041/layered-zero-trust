@@ -1,0 +1,13 @@
+{{- $clusters := .Values.acmManagedClusters.clusters | default list }}
+{{- range $cluster := $clusters }}
+{{- range $addon := $.Values.acmManagedClusters.addons | default list }}
+---
+apiVersion: addon.open-cluster-management.io/v1alpha1
+kind: ManagedClusterAddOn
+metadata:
+  name: {{ $addon }}
+  namespace: {{ $cluster.name }}
+spec:
+  installNamespace: open-cluster-management-agent-addon
+{{- end }}
+{{- end }}

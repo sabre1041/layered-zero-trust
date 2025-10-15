@@ -1,0 +1,8 @@
+apiVersion: v2
+name: acm-managed-clusters
+description: Import previously provisioned Openshift clusters into an Openshift Hub cluster using ACM
+version: 0.0.1
+keywords:
+  - pattern
+  - acm
+  - managed-clusters

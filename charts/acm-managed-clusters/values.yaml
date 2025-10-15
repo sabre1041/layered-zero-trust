@@ -1,0 +1,19 @@
+global:
+  secretStore:
+    kind: ClusterSecretStore
+    name: vault-backend
+
+acmManagedClusters:
+  addons:
+    - config-policy-controller
+    - governance-policy-framework
+    - cert-policy-controller
+    - application-manager
+  clusters: []
+  #  - name: ztvp-spoke-1
+  #    clusterGroup: group-one
+  #    labels:
+  #      cloud: auto-detect
+  #      vendor: auto-detect
+  #    kubeconfigVaultPath: secret/data/hub/kubeconfig-spoke
+  defaultClusterGroup: ztvp

@@ -122,6 +122,14 @@ clusterGroup:
           kind: ManagedClusterInfo
           jsonPointers:
             - /spec/loggingCA
+      # We override the secret store because we are not provisioning clusters
+      overrides:
+        - name: global.secretStore.backend
+          value: none
+    acm-managed-clusters:
+      name: acm-managed-clusters
+      project: hub
+      path: charts/acm-managed-clusters
     compliance-scanning:
       name: compliance-scanning
       namespace: openshift-compliance
@@ -202,8 +210,6 @@ clusterGroup:
         - name: app.vault.secretPath
           value: secret/data/global/qtodo
 
-
-
   imperative:
     # NOTE: We *must* use lists and not hashes. As hashes lose ordering once parsed by helm
     # The default schedule is every 10 minutes: imperative.schedule
@@ -221,32 +227,6 @@ clusterGroup:
     #   helmOverrides:
     #     - name: clusterGroup.isHubCluster
     #       value: false
-          # Before enabling cluster provisioning, ensure AWS and/or Azure
-          #   credentials and OCP pull secrets are defined in Vault.
-          #   See values-secret.yaml.template
-          #
-          #clusterPools:
-          #  exampleAWSPool:
-          #    name: aws-ap
-          #    openshiftVersion: 4.10.18
-          #    baseDomain: blueprints.rhecoeng.com
-          #    platform:
-          #      aws:
-          #        region: ap-southeast-2
-          #    clusters:
-          #    - One
-          #
-          #  exampleAzurePool:
-          #    name: azure-us
-          #    openshiftVersion: 4.10.18
-          #    baseDomain: blueprints.rhecoeng.com
-          #    platform:
-          #      azure:
-          #        baseDomainResourceGroupName: dojo-dns-zones
-          #        region: eastus
-          #    clusters:
-          #    - Two
-          #    - Three
 #  To have apps in multiple flavors, use namespaces and use helm overrides as appropriate
 #
 #    pipelines:
@@ -296,3 +276,14 @@ clusterGroup:
 #          operator: In
 #          values:
 #            - OpenShift
+
+
+# List of previously provisioned clusters to import and manage from the Hub cluster
+acmManagedClusters:
+  clusters: []
+  #  - name: ztvp-spoke-1
+  #    clusterGroup: group-one
+  #    labels:
+  #      cloud: auto-detect
+  #      vendor: auto-detect
+  #    kubeconfigVaultPath: secret/data/hub/kubeconfig-spoke

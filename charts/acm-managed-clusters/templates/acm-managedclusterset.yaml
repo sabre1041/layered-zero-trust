@@ -1,0 +1,11 @@
+{{- $clusters := .Values.acmManagedClusters.clusters | default list }}
+{{- range $clusters }}
+---
+apiVersion: cluster.open-cluster-management.io/v1beta2
+kind: ManagedClusterSet
+metadata:
+  name: {{ .clusterGroup | default $.Values.acmManagedClusters.defaultClusterGroup }}
+  annotations:
+    cluster.open-cluster-management.io/submariner-broker-ns: {{ .clusterGroup | default $.Values.acmManagedClusters.defaultClusterGroup }}-broker
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+{{- end }}

@@ -26,6 +26,8 @@ The following components are included in the Layered Zero Trust Pattern
   * Secure storage of sensitive assets
 * [External Secrets Operator (ESO)](https://external-secrets.io)
   * Synchronizes secrets stored in HashiCorp Vault with OpenShift
+* [Red Hat Advanced Cluster Management (ACM)](https://docs.redhat.com/en/documentation/red_hat_advanced_cluster_management_for_kubernetes/2.14)
+  * Provides a management control in multi-cluster scenarios
 
 ## Getting Started
 
@@ -41,7 +43,8 @@ Utilize the following steps to prepare your machine and complete any and all pre
 4. [Validated Patterns Tooling](https://validatedpatterns.io/learn/quickstart)
 5. Depending on the characteristics of your cluster, you may need additional hardware resources for Advanced Cluster Management (ACM) component. For a single node cluster you can start with 4 vCPUs, 16 GB of memory and 120 GB of storage. For more detailed information about ACM sizing, please refer to the [official documentation](https://docs.redhat.com/en/documentation/red_hat_advanced_cluster_management_for_kubernetes/2.14/html-single/install/index#sizing-your-cluster).
 
-_NOTE_: The default deployment of this patterns assumes that none of the components associated with the pattern have been deployed previously. Ensure that your OpenShift environment does not include any of the preceding components.
+>[!WARNING]
+> The default deployment of this patterns assumes that none of the components associated with the pattern have been deployed previously. Ensure that your OpenShift environment does not include any of the preceding components.
 
 ### Prepare for Deployment
 
@@ -201,3 +204,53 @@ Switch back to the qtodo application and enter the username and password on the 
 Once you have authenticated to RHBK, you will be instructed to change the temporary password and set a more permanent password. Once complete, you will be redirected to the qtodo application verifying the OIDC based authentication functions properly.
 
 Feel free to add new items to the list of todos. By being able to add and remove items from the page, the integration between the Quarkus application and the backend PostgreSQL database using credentials sourced from HashiCorp Vault was successful.
+
+### Importing existing clusters
+
+>[!WARNING]
+> Since ACM chart provisioning functionality uses `ClusterPools` and these technology is limited to Cloud environments, we do not recommend use those configuration settings.
+> Instead, we have enabled the option to import your existing standalone clusters using the **acm-managed-clusters** chart.
+
+The pattern supports importating pre-existing Openshift clusters into the Hub cluster, converting them into **Managed Clusters**.
+
+1. Copy the `kubeconfig` file of the cluster you want to import to your local system.
+
+2. In the `values-secret.yaml` file, add a new secret with the contents of the `kubeconfig` file.
+
+    ```yaml
+      - name: kubeconfig-spoke
+        vaultPrefixes:
+        - hub
+        fields:
+        - name: content
+          path: ~/.kube/kubeconfig-ztvp-spoke
+    ```
+
+3. In the `values-hub.yaml` file, add a new entry in the `clusterGroup.managedClusterGroups` key.
+
+    ```yaml
+      managedClusterGroups:
+        exampleRegion:
+          name: group-one
+          acmlabels:
+            - name: clusterGroup
+              value: group-one
+          helmOverrides:
+            - name: clusterGroup.isHubCluster
+              value: false
+    ```
+
+4. Also in the `values-hub.yaml` file, add your cluster definition in the `acmManagedClusters.clusters` key.
+
+    ```yaml
+    acmManagedClusters:
+      clusters:
+        - name: ztvp-spoke-1
+          clusterGroup: group-one
+          labels:
+            cloud: auto-detect
+            vendor: auto-detect
+          kubeconfigVaultPath: secret/data/hub/kubeconfig-spoke
+    ```
+
+5. Deploy the pattern.

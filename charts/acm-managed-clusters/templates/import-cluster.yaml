@@ -1,0 +1,14 @@
+{{- $clusters := .Values.acmManagedClusters.clusters | default list }}
+{{- range $clusters }}
+---
+apiVersion: cluster.open-cluster-management.io/v1
+kind: ManagedCluster
+metadata:
+  name: {{ .name }}
+  labels:
+    clusterGroup: {{ .clusterGroup | default $.Values.acmManagedClusters.defaultClusterGroup }}
+    cluster.open-cluster-management.io/clusterset: {{ .clusterGroup | default $.Values.acmManagedClusters.defaultClusterGroup }}
+    {{- toYaml .labels | nindent 4 }}
+spec:
+  hubAcceptsClient: true
+{{- end }}

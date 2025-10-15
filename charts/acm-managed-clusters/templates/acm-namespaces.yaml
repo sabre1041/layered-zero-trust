@@ -1,0 +1,8 @@
+{{- $clusters := .Values.acmManagedClusters.clusters | default list }}
+{{- range $clusters }}
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ .name }}
+{{- end }}
