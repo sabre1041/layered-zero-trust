@@ -26,18 +26,17 @@ clusterGroup:
     - cert-manager-operator:
         operatorGroup: true
         targetNamespace: cert-manager-operator
-    # UNCOMMENT if you want to deploy Quay
-    # - openshift-storage:
-    #     operatorGroup: true
-    #     targetNamespace: openshift-storage
-    #     annotations:
-    #       openshift.io/cluster-monitoring: "true"
-    #       argocd.argoproj.io/sync-wave: "-5"  # Propagated to OperatorGroup by framework
-    # - quay-enterprise:
-    #     annotations:
-    #       argocd.argoproj.io/sync-wave: "1"  # Create before NooBaa and all Quay components
-    #     labels:
-    #       openshift.io/cluster-monitoring: "true"
+    - openshift-storage:
+        operatorGroup: true
+        targetNamespace: openshift-storage
+        annotations:
+          openshift.io/cluster-monitoring: "true"
+          argocd.argoproj.io/sync-wave: "-5"  # Propagated to OperatorGroup by framework
+    - quay-enterprise:
+        annotations:
+          argocd.argoproj.io/sync-wave: "1"  # Create before NooBaa and all Quay components
+        labels:
+          openshift.io/cluster-monitoring: "true"
     # UNCOMMENT if you want to deploy RHTAS
     # - rhtas-operator:
     #     operatorGroup: true
@@ -84,19 +83,18 @@ clusterGroup:
       config:
         nodeSelector:
           node-role.kubernetes.io/worker: ""
-    # UNCOMMENT for Quay operator subscriptions
-    # odf:
-    #   name: odf-operator
-    #   namespace: openshift-storage
-    #   channel: stable-4.19
-    #   annotations:
-    #     argocd.argoproj.io/sync-wave: "-4"  # Layer 1: Install after OperatorGroup (-5)
-    # quay-operator:
-    #   name: quay-operator
-    #   namespace: openshift-operators
-    #   channel: stable-3.15
-    #   annotations:
-    #     argocd.argoproj.io/sync-wave: "-3"  # Layer 1: Install after ODF operator
+    odf:
+      name: odf-operator
+      namespace: openshift-storage
+      channel: stable-4.19
+      annotations:
+        argocd.argoproj.io/sync-wave: "-4"  # Layer 1: Install after OperatorGroup (-5)
+    quay-operator:
+      name: quay-operator
+      namespace: openshift-operators
+      channel: stable-3.15
+      annotations:
+        argocd.argoproj.io/sync-wave: "-3"  # Layer 1: Install after ODF operator
     # UNCOMMENT for RHTAS operator subscriptions
     # rhtas-operator:
     #   name: rhtas-operator
@@ -167,21 +165,20 @@ clusterGroup:
           #   subject: spiffe://apps.{{ $.Values.global.clusterDomain }}/ns/rhtas-system/sa/*
           #   policies:
           #     - global-secret
-    # UNCOMMENT for Quay applications
-    # noobaa-mcg:
-    #   name: noobaa-mcg
-    #   namespace: openshift-storage
-    #   project: hub
-    #   path: charts/noobaa-mcg
-    #   annotations:
-    #     argocd.argoproj.io/sync-wave: "5"  # Layer 1: Deploy after core services
-    # quay-registry:
-    #   name: quay-registry
-    #   namespace: quay-enterprise
-    #   project: hub  
-    #   path: charts/quay-registry
-    #   annotations:
-    #     argocd.argoproj.io/sync-wave: "10"  # Layer 1: Deploy after NooBaa
+    noobaa-mcg:
+      name: noobaa-mcg
+      namespace: openshift-storage
+      project: hub
+      path: charts/noobaa-mcg
+      annotations:
+        argocd.argoproj.io/sync-wave: "5"  # Layer 1: Deploy after core services
+    quay-registry:
+      name: quay-registry
+      namespace: quay-enterprise
+      project: hub  
+      path: charts/quay-registry
+      annotations:
+        argocd.argoproj.io/sync-wave: "10"  # Layer 1: Deploy after NooBaa
     # UNCOMMENT for RHTAS applications
     # rhtas:
     #   name: rhtas
