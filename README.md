@@ -201,3 +201,7 @@ Switch back to the qtodo application and enter the username and password on the 
 Once you have authenticated to RHBK, you will be instructed to change the temporary password and set a more permanent password. Once complete, you will be redirected to the qtodo application verifying the OIDC based authentication functions properly.
 
 Feel free to add new items to the list of todos. By being able to add and remove items from the page, the integration between the Quarkus application and the backend PostgreSQL database using credentials sourced from HashiCorp Vault was successful.
+
+## Development
+
+Interested in developing capabilities for this pattern or performing tests against it? Head over to our [Developer Documentation](./DEVELOPMENT.md).
