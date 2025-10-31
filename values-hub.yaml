@@ -251,20 +251,20 @@ clusterGroup:
     # For additional overrides that apply to the jobs, please refer to
     # https://hybrid-cloud-patterns.io/imperative-actions/#additional-job-customizations
     jobs: []
-    managedClusterGroups:
-      devel:
-        name: devel
-        helmOverrides:
-          - name: clusterGroup.isHubCluster
-            value: false
-        clusterSelector:
-          matchLabels:
-            clusterGroup: devel
-          matchExpressions:
-            - key: vendor
-              operator: In
-              values:
-                - OpenShift
+  managedClusterGroups:
+    devel:
+      name: devel
+      helmOverrides:
+        - name: clusterGroup.isHubCluster
+          value: false
+      clusterSelector:
+        matchLabels:
+          clusterGroup: devel
+        matchExpressions:
+          - key: vendor
+            operator: In
+            values:
+              - OpenShift
 
   # This configuration can be used for Pipeline/DevSecOps (UC-01 / UC-02)
   #  devel:
