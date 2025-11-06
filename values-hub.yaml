@@ -88,7 +88,7 @@ clusterGroup:
       channel: stable-4.19
       annotations:
         argocd.argoproj.io/sync-wave: "-4"  # Layer 1: Install after OperatorGroup (-5)
-    # quay-operator:
+    quay-operator:
       name: quay-operator
       namespace: openshift-operators
       channel: stable-3.15
