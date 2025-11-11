@@ -349,7 +349,7 @@ acmManagedClusters:
       labels:
         cloud: auto-detect
         vendor: auto-detect
-      kubeconfigVaultPath: secret/data/hub/kubeconfig-spoke-1
+      kubeconfigVaultPath: secret/data/hub/kubeconfig-spoke
   #  - name: ztvp-spoke-2
   #    clusterGroup: production
   #    labels:
