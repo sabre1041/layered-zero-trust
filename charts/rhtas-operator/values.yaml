@@ -32,7 +32,7 @@ rhtas:
     # Each issuer type can be independently enabled/disabled via zeroTrust flags
     oidcIssuers:
       spiffe:
-        clientID: "trusted-artifact-signer"
+        clientID: "sigstore"
         type: "spiffe"
       keycloak:
         clientID: "trusted-artifact-signer"
