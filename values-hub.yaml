@@ -167,11 +167,11 @@ clusterGroup:
             policies:
               - global-secret
           # UNCOMMENT for RHTAS vault role
-          # - name: rhtas
-          #   audience: rhtas
-          #   subject: spiffe://apps.{{ $.Values.global.clusterDomain }}/ns/trusted-artifact-signer/sa/*
-          #   policies:
-          #     - global-secret
+          - name: rhtas
+            audience: rhtas
+            subject: spiffe://apps.{{ $.Values.global.clusterDomain }}/ns/trusted-artifact-signer/sa/*
+            policies:
+              - global-secret
     # UNCOMMENT for Quay applications
     # noobaa-mcg:
     #   name: noobaa-mcg
