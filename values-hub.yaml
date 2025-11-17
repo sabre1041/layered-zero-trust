@@ -28,24 +28,24 @@ clusterGroup:
         targetNamespace: cert-manager-operator
     # Layer 1: Quay Registry (for container image storage and signing)
     # COMMENTED OUT: Uncomment to enable integrated Quay registry
-    # - openshift-storage:
-    #     operatorGroup: true
-    #     targetNamespace: openshift-storage
-    #     annotations:
-    #       openshift.io/cluster-monitoring: "true"
-    #       argocd.argoproj.io/sync-wave: "-5"  # Propagated to OperatorGroup by framework
-    # - quay-enterprise:
-    #     annotations:
-    #       argocd.argoproj.io/sync-wave: "1"  # Create before NooBaa and all Quay components
-    #     labels:
-    #       openshift.io/cluster-monitoring: "true"
+    - openshift-storage:
+        operatorGroup: true
+        targetNamespace: openshift-storage
+        annotations:
+          openshift.io/cluster-monitoring: "true"
+          argocd.argoproj.io/sync-wave: "-5"  # Propagated to OperatorGroup by framework
+    - quay-enterprise:
+        annotations:
+          argocd.argoproj.io/sync-wave: "1"  # Create before NooBaa and all Quay components
+        labels:
+          openshift.io/cluster-monitoring: "true"
     # RHTAS namespace (required when RHTAS application is enabled)
     # COMMENTED OUT: Uncomment to enable RHTAS with SPIFFE signing
-    # - trusted-artifact-signer:
-    #     annotations:
-    #       argocd.argoproj.io/sync-wave: "1"  # Auto-created by RHTAS operator
-    #     labels:
-    #       openshift.io/cluster-monitoring: "true"
+    - trusted-artifact-signer:
+        annotations:
+          argocd.argoproj.io/sync-wave: "1"  # Auto-created by RHTAS operator
+        labels:
+          openshift.io/cluster-monitoring: "true"
     - zero-trust-workload-identity-manager:
         operatorGroup: true
         targetNamespace: zero-trust-workload-identity-manager
@@ -86,27 +86,27 @@ clusterGroup:
     # Storage and Registry operator subscriptions
     # COMMENTED OUT: Uncomment to enable integrated Quay registry
     # ODF provides object storage backend (NooBaa) for Quay and RHTPA
-    # odf:
-    #   name: odf-operator
-    #   namespace: openshift-storage
-    #   channel: stable-4.19
-    #   annotations:
-    #     argocd.argoproj.io/sync-wave: "-4"  # Install after OperatorGroup (-5)
-    # quay-operator:
-    #   name: quay-operator
-    #   namespace: openshift-operators
-    #   channel: stable-3.15
-    #   annotations:
-    #     argocd.argoproj.io/sync-wave: "-3"  # Install after ODF operator
+    odf:
+      name: odf-operator
+      namespace: openshift-storage
+      channel: stable-4.19
+      annotations:
+        argocd.argoproj.io/sync-wave: "-4"  # Install after OperatorGroup (-5)
+    quay-operator:
+      name: quay-operator
+      namespace: openshift-operators
+      channel: stable-3.15
+      annotations:
+        argocd.argoproj.io/sync-wave: "-3"  # Install after ODF operator
     # RHTAS operator subscription (required when RHTAS application is enabled)
     # COMMENTED OUT: Uncomment to enable RHTAS with SPIFFE integration
-    # rhtas-operator:
-    #   name: rhtas-operator
-    #   namespace: openshift-operators
-    #   channel: stable
-    #   annotations:
-    #     argocd.argoproj.io/sync-wave: "-2"  # Install after Quay operator, before applications
-    #   catalogSource: redhat-operators
+    rhtas-operator:
+      name: rhtas-operator
+      namespace: openshift-operators
+      channel: stable
+      annotations:
+        argocd.argoproj.io/sync-wave: "-2"  # Install after Quay operator, before applications
+      catalogSource: redhat-operators
   projects:
     - hub
   # Explicitly mention the cluster-state based overrides we plan to use for this pattern.
@@ -177,45 +177,45 @@ clusterGroup:
     # COMMENTED OUT: Uncomment to enable integrated Quay registry
     # NooBaa MCG provides S3-compatible object storage for multiple applications
     # Direct consumers: Quay (container image storage)
-    # noobaa-mcg:
-    #   name: noobaa-mcg
-    #   namespace: openshift-storage
-    #   project: hub
-    #   path: charts/noobaa-mcg
-    #   annotations:
-    #     argocd.argoproj.io/sync-wave: "5"  # Deploy after core services
+    noobaa-mcg:
+      name: noobaa-mcg
+      namespace: openshift-storage
+      project: hub
+      path: charts/noobaa-mcg
+      annotations:
+        argocd.argoproj.io/sync-wave: "5"  # Deploy after core services
     # Quay Container Registry (uses NooBaa for storage)
-    # quay-registry:
-    #   name: quay-registry
-    #   namespace: quay-enterprise
-    #   project: hub  
-    #   path: charts/quay-registry
-    #   annotations:
-    #     argocd.argoproj.io/sync-wave: "10"  # Deploy after NooBaa storage backend
+    quay-registry:
+      name: quay-registry
+      namespace: quay-enterprise
+      project: hub  
+      path: charts/quay-registry
+      annotations:
+        argocd.argoproj.io/sync-wave: "10"  # Deploy after NooBaa storage backend
     # RHTAS with SPIFFE Integration
     # COMMENTED OUT: Uncomment to enable RHTAS with SPIFFE and Email issuers
     # Depends on: Vault, SPIRE, Keycloak (for Email OIDC issuer if used)
-    # trusted-artifact-signer:
-    #   name: trusted-artifact-signer
-    #   namespace: trusted-artifact-signer
-    #   project: hub
-    #   path: charts/rhtas-operator
-    #   annotations:
-    #     argocd.argoproj.io/sync-wave: "15"  # Deploy after dependencies
-    #   overrides:
-    #     # OIDC Issuer Configuration - Both can be enabled simultaneously
-    #     # Enable SPIFFE issuer for workload identity
-    #     - name: rhtas.zeroTrust.spire.enabled
-    #       value: "true"
-    #     - name: rhtas.zeroTrust.spire.trustDomain
-    #       value: "apps.{{ $.Values.global.clusterDomain }}"
-    #     - name: rhtas.zeroTrust.spire.issuer
-    #       value: "https://spire-spiffe-oidc-discovery-provider.apps.{{ $.Values.global.clusterDomain }}"
-    #     # Enable Keycloak issuer for user/email authentication
-    #     - name: rhtas.zeroTrust.email.enabled
-    #       value: "true"
-    #     - name: rhtas.zeroTrust.email.issuer
-    #       value: https://keycloak.apps.{{ $.Values.global.clusterDomain }}/realms/ztvp
+    trusted-artifact-signer:
+      name: trusted-artifact-signer
+      namespace: trusted-artifact-signer
+      project: hub
+      path: charts/rhtas-operator
+      annotations:
+        argocd.argoproj.io/sync-wave: "15"  # Deploy after dependencies
+      overrides:
+        # OIDC Issuer Configuration - Both can be enabled simultaneously
+        # Enable SPIFFE issuer for workload identity
+        - name: rhtas.zeroTrust.spire.enabled
+          value: "true"
+        - name: rhtas.zeroTrust.spire.trustDomain
+          value: "apps.{{ $.Values.global.clusterDomain }}"
+        - name: rhtas.zeroTrust.spire.issuer
+          value: "https://spire-spiffe-oidc-discovery-provider.apps.{{ $.Values.global.clusterDomain }}"
+        # Enable Keycloak issuer for user/email authentication
+        - name: rhtas.zeroTrust.email.enabled
+          value: "true"
+        - name: rhtas.zeroTrust.email.issuer
+          value: https://keycloak.apps.{{ $.Values.global.clusterDomain }}/realms/ztvp
     golang-external-secrets:
       name: golang-external-secrets
       namespace: golang-external-secrets
@@ -265,21 +265,21 @@ clusterGroup:
     # For additional overrides that apply to the jobs, please refer to
     # https://hybrid-cloud-patterns.io/imperative-actions/#additional-job-customizations
     jobs: []
-  managedClusterGroups: {}
+  managedClusterGroups:
   # This configuration can be used for Pipeline/DevSecOps (UC-01 / UC-02)
-  #  devel:
-  #    name: devel
-  #    helmOverrides:
-  #      - name: clusterGroup.isHubCluster
-  #        value: false
-  #    clusterSelector:
-  #      matchLabels:
-  #        clusterGroup: devel
-  #      matchExpressions:
-  #        - key: vendor
-  #          operator: In
-  #          values:
-  #            - OpenShift
+    devel:
+      name: devel
+      helmOverrides:
+        - name: clusterGroup.isHubCluster
+          value: false
+      clusterSelector:
+        matchLabels:
+          clusterGroup: devel
+        matchExpressions:
+          - key: vendor
+            operator: In
+            values:
+              - OpenShift
   #  production:
   #    name: production
   #    helmOverrides:
@@ -356,14 +356,14 @@ clusterGroup:
 
 # List of previously provisioned clusters to import and manage from the Hub cluster
 acmManagedClusters:
-  clusters: []
+  clusters:
   # This configuration can be used for Pipeline/DevSecOps (UC-01 / UC-02)
-  #  - name: ztvp-spoke-1
-  #    clusterGroup: devel
-  #    labels:
-  #      cloud: auto-detect
-  #      vendor: auto-detect
-  #    kubeconfigVaultPath: secret/data/hub/kubeconfig-spoke-1
+    - name: ztvp-spoke-1
+      clusterGroup: devel
+      labels:
+        cloud: auto-detect
+        vendor: auto-detect
+      kubeconfigVaultPath: secret/data/hub/kubeconfig-spoke-1
   #  - name: ztvp-spoke-2
   #    clusterGroup: production
   #    labels:
