@@ -193,8 +193,8 @@ clusterGroup:
     #   annotations:
     #     argocd.argoproj.io/sync-wave: "10"  # Deploy after NooBaa storage backend
     # RHTAS with SPIFFE Integration
-    # COMMENTED OUT: Uncomment to enable RHTAS with SPIFFE and Keycloak issuers
-    # Depends on: Vault, SPIRE, Keycloak
+    # COMMENTED OUT: Uncomment to enable RHTAS with SPIFFE and Email issuers
+    # Depends on: Vault, SPIRE, Keycloak (for Email OIDC issuer if used)
     # trusted-artifact-signer:
     #   name: trusted-artifact-signer
     #   namespace: trusted-artifact-signer
@@ -209,13 +209,13 @@ clusterGroup:
     #       value: "true"
     #     - name: rhtas.zeroTrust.spire.trustDomain
     #       value: "apps.{{ $.Values.global.clusterDomain }}"
-    #     - name: rhtas.zeroTrust.spire.oidcDiscoveryUrl
+    #     - name: rhtas.zeroTrust.spire.issuer
     #       value: "https://spire-spiffe-oidc-discovery-provider.apps.{{ $.Values.global.clusterDomain }}"
     #     # Enable Keycloak issuer for user/email authentication
-    #     - name: rhtas.zeroTrust.keycloak.enabled
+    #     - name: rhtas.zeroTrust.email.enabled
     #       value: "true"
-    #     - name: rhtas.zeroTrust.keycloak.url
-    #       value: https://keycloak.apps.{{ $.Values.global.clusterDomain }}
+    #     - name: rhtas.zeroTrust.email.issuer
+    #       value: https://keycloak.apps.{{ $.Values.global.clusterDomain }}/realms/ztvp
     golang-external-secrets:
       name: golang-external-secrets
       namespace: golang-external-secrets

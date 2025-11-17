@@ -51,28 +51,3 @@ app.kubernetes.io/name: {{ include "rhtas-operator.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 
-{{/*
-Generate the Keycloak OIDC Issuer URL
-This evaluates any template variables (like {{ $.Values.global.clusterDomain }})
-and appends the realm name.
-*/}}
-{{- define "rhtas-operator.keycloakOIDCIssuer" -}}
-{{- $keycloakUrl := tpl .Values.rhtas.zeroTrust.keycloak.url . -}}
-{{- printf "%s/realms/%s" $keycloakUrl .Values.rhtas.zeroTrust.keycloak.realm -}}
-{{- end }}
-
-{{/*
-Generate the SPIFFE Trust Domain
-This evaluates any template variables (like {{ $.Values.global.clusterDomain }})
-*/}}
-{{- define "rhtas-operator.spiffeTrustDomain" -}}
-{{- tpl .Values.rhtas.zeroTrust.spire.trustDomain . -}}
-{{- end }}
-
-{{/*
-Generate the SPIRE OIDC Discovery URL
-This evaluates any template variables (like {{ $.Values.global.clusterDomain }})
-*/}}
-{{- define "rhtas-operator.spireOIDCDiscoveryUrl" -}}
-{{- tpl .Values.rhtas.zeroTrust.spire.oidcDiscoveryUrl . -}}
-{{- end }}
