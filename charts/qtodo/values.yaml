@@ -10,7 +10,7 @@ app:
   name: qtodo
   images:
     main:
-      name: quay.io/hybridcloudpatterns/qtodo
+      name: quay.io/validatedpatterns/qtodo
       tag: latest
       # Modified to Always to force a pull so we can test changes to the container image without requiring manual deletion of images or restarts of argo
       pullPolicy: Always
