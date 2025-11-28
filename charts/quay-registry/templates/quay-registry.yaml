@@ -18,6 +18,8 @@ spec:
       managed: true
     - kind: postgres
       managed: true
+      overrides:
+        volumeSize: {{ .Values.quay.storage.postgres.size }}
     - kind: redis
       managed: true
     - kind: objectstorage
@@ -30,5 +32,7 @@ spec:
       managed: true
     - kind: clairpostgres
       managed: true
+      overrides:
+        volumeSize: {{ .Values.quay.storage.clairpostgres.size }}
   # Use the secret created by the S3 job (with real credentials), not the Git-managed template
   configBundleSecret: quay-config-with-s3

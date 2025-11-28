@@ -1,28 +1,5 @@
 quay:
   namespace: quay-enterprise
-  component:
-    - name: clair
-      managed: true
-    - name: horizontalpodautoscaler
-      managed: true
-    - name: mirror
-      managed: true
-    - name: monitoring
-      managed: true
-    - name: postgres
-      managed: true
-    - name: redis
-      managed: true
-    - name: objectstorage
-      managed: false
-    - name: route
-      managed: true
-    - name: tls
-      managed: true
-    - name: quay
-      managed: true
-    - name: clairpostgres
-      managed: true
   configBundleSecret:
     deploy: true
     name: quay-init-config-bundle-secret
@@ -33,6 +10,11 @@ quay:
     user:
       name: developer1
       email: developer1@myorg.com
+  storage:
+    postgres:
+      size: 50Gi  # Default and minimum size is 50 Gi
+    clairpostgres:
+      size: 50Gi  # Default and minimum size is 50 Gi
 
 job:
   image: registry.redhat.io/openshift4/ose-cli:latest

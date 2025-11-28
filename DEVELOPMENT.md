@@ -50,6 +50,27 @@ oc patch oauth cluster  --type json   -p='[{"op": "remove", "path": "/spec/token
 
 The updated setting will become enabled upon next login.
 
+### Reducing the storage required
+
+By default, NooBaa requires 100 Gi of disk space: 50 Gi for the database and 50 Gi for the default `BackingStore`. While this might make sense for production, in our development environment we will only be using a few images for testing, so it may be excessive.
+
+If we want to save some space, we can add these overrides to the `noobaa-mcg` component in the `values-hub.yaml` file:
+
+```yaml
+    noobaa-mcg:
+      name: noobaa-mcg
+      namespace: openshift-storage
+      project: hub
+      path: charts/noobaa-mcg
+      annotations:
+        argocd.argoproj.io/sync-wave: "5"
+      overrides:
+        - name: noobaa.dbSize
+          value: 10Gi
+        - name: noobaa.pvPool.resources.requests.storage
+          value: 25Gi
+```
+
 ## Analytics Tracking
 
 Metrics are captured to track the use of any of the Validated Patterns. It is important than an accurate depiction of pattern use by customers, partners and those from the community are captured. Red Hat associates should not factor into this calculation and support is available in the Validated Patterns framework to opt out of being captured.

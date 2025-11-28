@@ -12,3 +12,6 @@ spec:
       operator: "Equal"
       value: "true"
       effect: "NoSchedule"
+  dbVolumeResources:
+    requests:
+      storage: {{ .Values.noobaa.dbSize }}

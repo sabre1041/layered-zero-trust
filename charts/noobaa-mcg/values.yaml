@@ -13,3 +13,13 @@ noobaa:
       tiers:
         - backingStores:
             - noobaa-default-backing-store
+  dbSize: 50Gi  # Default size for NooBaa DB is 50 Gi
+  pvPool:
+    resources:
+      requests:
+        cpu: 800m
+        memory: 800Mi
+        storage: 50Gi  # Default size for NooBaa PV Pool is 50 Gi
+      limits:
+        cpu: 1
+        memory: 4Gi

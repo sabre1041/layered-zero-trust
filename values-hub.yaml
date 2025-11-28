@@ -225,7 +225,7 @@ clusterGroup:
     # quay-registry:
     #   name: quay-registry
     #   namespace: quay-enterprise
-    #   project: hub  
+    #   project: hub
     #   path: charts/quay-registry
     #   annotations:
     #     argocd.argoproj.io/sync-wave: "10"  # Deploy after NooBaa storage backend
