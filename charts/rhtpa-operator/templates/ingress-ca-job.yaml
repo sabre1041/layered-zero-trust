@@ -47,16 +47,19 @@ metadata:
     argocd.argoproj.io/sync-wave: "0"
     argocd.argoproj.io/hook: PreSync
 rules:
-# Read ingress CA from router secret
+# Read ingress CA from router secret (default or custom)
 - apiGroups: [""]
   resources: ["secrets"]
-  resourceNames: ["router-certs-default"]
-  verbs: ["get"]
+  verbs: ["get", "list"]
 # Read OpenShift service CA (for NooBaa S3 TLS)
 - apiGroups: [""]
   resources: ["configmaps"]
   resourceNames: ["openshift-service-ca.crt"]
   verbs: ["get"]
+# Read ingress controller configuration to detect custom certs
+- apiGroups: ["operator.openshift.io"]
+  resources: ["ingresscontrollers"]
+  verbs: ["get", "list"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -96,17 +99,166 @@ spec:
         - -c
         - |
           set -e
-          echo "Extracting OpenShift ingress CA certificate..."
+          INGRESS_CA_FOUND=false
           
-          # Extract the ingress certificate from the router secret
-          oc get secret router-certs-default -n openshift-ingress -o jsonpath='{.data.tls\.crt}' | base64 -d > /tmp/ingress-ca.crt
+          {{- if .Values.rhtpa.tls.ingressCA.certificate }}
+          # Use custom CA certificate provided in values
+          echo "Using custom ingress CA certificate from values..."
+          cat > /tmp/ingress-ca.crt << 'EOF'
+{{ .Values.rhtpa.tls.ingressCA.certificate }}
+          EOF
+          INGRESS_CA_FOUND=true
+          {{- else if .Values.rhtpa.tls.ingressCA.customSource.enabled }}
+          # Use custom source secret
+          echo "Extracting ingress CA from custom secret: {{ .Values.rhtpa.tls.ingressCA.customSource.secretName }}/{{ .Values.rhtpa.tls.ingressCA.customSource.secretNamespace }}..."
+          if oc get secret {{ .Values.rhtpa.tls.ingressCA.customSource.secretName }} -n {{ .Values.rhtpa.tls.ingressCA.customSource.secretNamespace }} &>/dev/null; then
+            oc get secret {{ .Values.rhtpa.tls.ingressCA.customSource.secretName }} \
+              -n {{ .Values.rhtpa.tls.ingressCA.customSource.secretNamespace }} \
+              -o jsonpath='{.data.{{ .Values.rhtpa.tls.ingressCA.customSource.secretKey }}}' | base64 -d > /tmp/ingress-ca.crt
+            INGRESS_CA_FOUND=true
+            echo "Custom ingress CA extracted successfully"
+          else
+            echo "ERROR: Custom secret {{ .Values.rhtpa.tls.ingressCA.customSource.secretName }} not found in {{ .Values.rhtpa.tls.ingressCA.customSource.secretNamespace }}"
+            exit 1
+          fi
+          {{- else }}
+          # Auto-detect ingress CA certificate
+          echo "Auto-detecting OpenShift ingress CA certificate..."
           
-          # Create or update the ingress CA ConfigMap (for backward compatibility)
-          oc create configmap rhtpa-ingress-ca -n {{ .Values.rhtpa.namespace }} \
-            --from-file=ca.crt=/tmp/ingress-ca.crt \
-            --dry-run=client -o yaml | oc apply -f -
+          # Try default router secret first
+          if oc get secret router-certs-default -n openshift-ingress &>/dev/null; then
+            echo "Found default router secret: router-certs-default"
+            oc get secret router-certs-default -n openshift-ingress -o jsonpath='{.data.tls\.crt}' | base64 -d > /tmp/ingress-ca.crt
+            INGRESS_CA_FOUND=true
+          else
+            echo "Default router-certs-default secret not found, checking for custom ingress configuration..."
+            
+            # Check if there's a custom cert configured in the default ingresscontroller
+            CUSTOM_CERT_SECRET=$(oc get ingresscontroller default -n openshift-ingress-operator -o jsonpath='{.spec.defaultCertificate.name}' 2>/dev/null || echo "")
+            
+            if [ -n "$CUSTOM_CERT_SECRET" ]; then
+              echo "Found custom certificate reference in ingresscontroller: $CUSTOM_CERT_SECRET"
+              if oc get secret "$CUSTOM_CERT_SECRET" -n openshift-ingress &>/dev/null; then
+                oc get secret "$CUSTOM_CERT_SECRET" -n openshift-ingress -o jsonpath='{.data.tls\.crt}' | base64 -d > /tmp/ingress-ca.crt
+                INGRESS_CA_FOUND=true
+                echo "Custom ingress CA extracted from $CUSTOM_CERT_SECRET"
+              else
+                echo "WARNING: Custom cert secret $CUSTOM_CERT_SECRET referenced but not found"
+              fi
+            fi
+            
+            # Try other common secret names as fallback
+            if [ "$INGRESS_CA_FOUND" = "false" ]; then
+              for SECRET_NAME in custom-certs-default ingress-certs-default router-certs; do
+                if oc get secret "$SECRET_NAME" -n openshift-ingress &>/dev/null; then
+                  echo "Found alternative secret: $SECRET_NAME"
+                  oc get secret "$SECRET_NAME" -n openshift-ingress -o jsonpath='{.data.tls\.crt}' | base64 -d > /tmp/ingress-ca.crt
+                  INGRESS_CA_FOUND=true
+                  break
+                fi
+              done
+            fi
+          fi
           
-          echo "Ingress CA certificate extracted"
+          if [ "$INGRESS_CA_FOUND" = "false" ]; then
+            echo "======================================================================"
+            echo "ERROR: Could not find ingress CA certificate"
+            echo "======================================================================"
+            echo ""
+            echo "The job attempted to find certificates in the following locations:"
+            echo "  1. Secret 'router-certs-default' in openshift-ingress namespace"
+            echo "  2. IngressController custom certificate reference"
+            echo "  3. Common secret names: custom-certs-default, ingress-certs-default, router-certs"
+            echo ""
+            echo "If you are using custom certificates, please configure one of these options:"
+            echo ""
+            echo "----------------------------------------------------------------------"
+            echo "Option 1: Provide certificate directly in Helm values"
+            echo "----------------------------------------------------------------------"
+            echo "rhtpa:"
+            echo "  tls:"
+            echo "    ingressCA:"
+            echo "      enabled: true"
+            echo "      certificate: |"
+            echo "        -----BEGIN CERTIFICATE-----"
+            echo "        <your PEM-encoded CA certificate>"
+            echo "        -----END CERTIFICATE-----"
+            echo ""
+            echo "----------------------------------------------------------------------"
+            echo "Option 2: Reference an existing Kubernetes secret"
+            echo "----------------------------------------------------------------------"
+            echo "rhtpa:"
+            echo "  tls:"
+            echo "    ingressCA:"
+            echo "      enabled: true"
+            echo "      customSource:"
+            echo "        enabled: true"
+            echo "        secretName: \"your-custom-cert-secret\""
+            echo "        secretNamespace: \"openshift-ingress\""
+            echo "        secretKey: \"tls.crt\""
+            echo ""
+            echo "----------------------------------------------------------------------"
+            echo "Option 3: Configure your custom cert in OpenShift IngressController"
+            echo "----------------------------------------------------------------------"
+            echo "oc patch ingresscontroller default -n openshift-ingress-operator \\"
+            echo "  --type merge -p '{\"spec\":{\"defaultCertificate\":{\"name\":\"your-cert-secret\"}}}'"
+            echo ""
+            echo "For more information, see:"
+            echo "https://docs.openshift.com/container-platform/latest/security/certificates/"
+            echo "======================================================================"
+            exit 1
+          fi
+          {{- end }}
+          
+          # Verify the certificate is valid (if openssl is available)
+          if command -v openssl &>/dev/null; then
+            if ! openssl x509 -in /tmp/ingress-ca.crt -noout &>/dev/null; then
+              echo "ERROR: Extracted certificate is not valid"
+              exit 1
+            fi
+            echo "Certificate validation passed"
+          else
+            echo "WARNING: openssl not available, skipping certificate validation"
+          fi
+          
+          # Create or update the ingress CA ConfigMap with ArgoCD pruning protection
+          echo "Creating ingress CA ConfigMap..."
+          cat <<EOF | oc apply -f -
+          apiVersion: v1
+          kind: ConfigMap
+          metadata:
+            name: rhtpa-ingress-ca
+            namespace: {{ .Values.rhtpa.namespace }}
+            annotations:
+              argocd.argoproj.io/sync-options: Prune=false
+            labels:
+              app.kubernetes.io/name: rhtpa
+              app.kubernetes.io/component: tls-certificates
+              app.kubernetes.io/managed-by: rhtpa-ingress-ca-extractor
+          data:
+            ca.crt: |
+          $(cat /tmp/ingress-ca.crt | sed 's/^/      /')
+          EOF
+          
+          # Verify ConfigMap was created with valid certificate data
+          echo "Validating ConfigMap contents..."
+          CERT_SIZE=$(oc get configmap rhtpa-ingress-ca -n {{ .Values.rhtpa.namespace }} \
+            -o jsonpath='{.data.ca\.crt}' 2>/dev/null | wc -c)
+          
+          if [ -z "$CERT_SIZE" ] || [ "$CERT_SIZE" -lt 100 ]; then
+            echo "ERROR: ConfigMap created but certificate data is missing or too small ($CERT_SIZE bytes)"
+            echo "This usually indicates a problem with certificate extraction or ConfigMap creation"
+            exit 1
+          fi
+          
+          # Verify it's valid PEM format
+          if ! oc get configmap rhtpa-ingress-ca -n {{ .Values.rhtpa.namespace }} \
+            -o jsonpath='{.data.ca\.crt}' | grep -q "^-----BEGIN CERTIFICATE-----"; then
+            echo "ERROR: ConfigMap data does not contain valid PEM certificate"
+            exit 1
+          fi
+          
+          echo "ConfigMap validation passed (certificate size: $CERT_SIZE bytes)"
           
           # Extract the OpenShift service CA (for NooBaa S3 and other internal services)
           echo "Extracting OpenShift service CA certificate..."
@@ -119,11 +271,45 @@ spec:
           echo "Creating combined CA bundle..."
           cat /tmp/ingress-ca.crt /tmp/service-ca.crt > /tmp/combined-ca.crt
           
-          # Create the combined CA ConfigMap
-          oc create configmap rhtpa-combined-ca -n {{ .Values.rhtpa.namespace }} \
-            --from-file=combined-ca.crt=/tmp/combined-ca.crt \
-            --dry-run=client -o yaml | oc apply -f -
+          # Create the combined CA ConfigMap with ArgoCD pruning protection
+          echo "Creating combined CA ConfigMap..."
+          cat <<EOF | oc apply -f -
+          apiVersion: v1
+          kind: ConfigMap
+          metadata:
+            name: rhtpa-combined-ca
+            namespace: {{ .Values.rhtpa.namespace }}
+            annotations:
+              argocd.argoproj.io/sync-options: Prune=false
+            labels:
+              app.kubernetes.io/name: rhtpa
+              app.kubernetes.io/component: tls-certificates
+              app.kubernetes.io/managed-by: rhtpa-ingress-ca-extractor
+          data:
+            combined-ca.crt: |
+          $(cat /tmp/combined-ca.crt | sed 's/^/      /')
+          EOF
           
-          echo "Combined CA bundle created (ingress CA + service CA)"
+          # Verify combined CA ConfigMap was created with valid certificate data
+          echo "Validating combined CA ConfigMap contents..."
+          COMBINED_CERT_SIZE=$(oc get configmap rhtpa-combined-ca -n {{ .Values.rhtpa.namespace }} \
+            -o jsonpath='{.data.combined-ca\.crt}' 2>/dev/null | wc -c)
+          
+          if [ -z "$COMBINED_CERT_SIZE" ] || [ "$COMBINED_CERT_SIZE" -lt 200 ]; then
+            echo "ERROR: Combined CA ConfigMap created but certificate data is missing or too small ($COMBINED_CERT_SIZE bytes)"
+            echo "This usually indicates a problem with certificate extraction or ConfigMap creation"
+            exit 1
+          fi
+          
+          # Verify combined CA contains at least 2 certificates
+          CERT_COUNT=$(oc get configmap rhtpa-combined-ca -n {{ .Values.rhtpa.namespace }} \
+            -o jsonpath='{.data.combined-ca\.crt}' | grep -c "BEGIN CERTIFICATE" || echo "0")
+          
+          if [ "$CERT_COUNT" -lt 2 ]; then
+            echo "ERROR: Combined CA should contain at least 2 certificates (ingress + service), found $CERT_COUNT"
+            exit 1
+          fi
+          
+          echo "Combined CA validation passed (size: $COMBINED_CERT_SIZE bytes, certificates: $CERT_COUNT)"
 {{- end }}
 

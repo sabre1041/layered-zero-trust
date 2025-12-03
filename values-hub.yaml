@@ -28,7 +28,7 @@ clusterGroup:
         targetNamespace: cert-manager-operator
     # Layer 1: Storage and Registry
     # Required for RHTPA (provides NooBaa object storage backend)
-    # COMMENTED OUT for Quay: Uncomment to also enable Quay registry
+    # COMMENTED OUT: Uncomment to enable RHTPA with storage backend
     # - openshift-storage:
     #     operatorGroup: true
     #     targetNamespace: openshift-storage
@@ -47,7 +47,7 @@ clusterGroup:
     #       argocd.argoproj.io/sync-wave: "1"  # Auto-created by RHTAS operator
     #     labels:
     #       openshift.io/cluster-monitoring: "true"
-    # UNCOMMENT if you want to deploy RHTPA
+    # COMMENTED OUT: Uncomment to enable RHTPA
     # - rhtpa-operator:
     #     operatorGroup: true
     #     targetNamespace: rhtpa-operator
@@ -98,7 +98,7 @@ clusterGroup:
     # Storage and Registry operator subscriptions
     # Required for RHTPA (provides NooBaa object storage backend)
     # ODF provides object storage backend (NooBaa) for RHTPA and optionally Quay
-    # COMMENTED OUT - Uncomment to enable ODF
+    # COMMENTED OUT: Uncomment to enable RHTPA storage backend
     # odf:
     #   name: odf-operator
     #   namespace: openshift-storage
@@ -123,7 +123,7 @@ clusterGroup:
     # RHTPA operator subscription
     # Channel: stable-v1.1 provides latest 1.1.x patch updates
     # Note: No direct upgrade path from 1.1.x to 2.x (requires fresh install)
-    # COMMENTED OUT - Uncomment to enable RHTPA operator
+    # COMMENTED OUT: Uncomment to enable RHTPA operator
     # rhtpa-operator:
     #   name: rhtpa-operator
     #   namespace: rhtpa-operator  # MUST use dedicated namespace (not openshift-operators)
@@ -198,21 +198,23 @@ clusterGroup:
             policies:
               - global-secret
           # RHTPA vault role
-          - name: rhtpa
-            audience: rhtpa
-            subject: spiffe://apps.{{ $.Values.global.clusterDomain }}/ns/trusted-profile-analyzer/sa/rhtpa
-            policies:
-              - global-secret
+          # COMMENTED OUT: Uncomment to enable RHTPA
+          # - name: rhtpa
+          #   audience: rhtpa
+          #   subject: spiffe://apps.{{ $.Values.global.clusterDomain }}/ns/trusted-profile-analyzer/sa/rhtpa
+          #   policies:
+          #     - global-secret
           # SYFT vault role (for SBOM generation)
-          - name: syft
-            audience: syft
-            subject: spiffe://apps.{{ $.Values.global.clusterDomain }}/ns/trusted-profile-analyzer/sa/syft
-            policies:
-              - global-secret
+          # COMMENTED OUT: Uncomment to enable RHTPA
+          # - name: syft
+          #   audience: syft
+          #   subject: spiffe://apps.{{ $.Values.global.clusterDomain }}/ns/trusted-profile-analyzer/sa/syft
+          #   policies:
+          #     - global-secret
     # Shared Object Storage Backend
     # Required for RHTPA (provides S3-compatible storage via NooBaa MCG)
     # NooBaa MCG provides S3-compatible object storage for multiple applications
-    # COMMENTED OUT - Uncomment to enable NooBaa
+    # COMMENTED OUT: Uncomment to enable RHTPA storage backend
     # noobaa-mcg:
     #   name: noobaa-mcg
     #   namespace: openshift-storage
@@ -297,11 +299,6 @@ clusterGroup:
     #     - name: rhtpa.syft.scanner.enabled
     #       value: true
     #     - name: rhtpa.syft.scanner.suspend
-    #       value: true
-    #     # Image Discovery - Automatically discover images from production namespaces
-    #     # When enabled, dynamically discovered images are COMBINED with static images below
-    #     # Runs a local discovery job to find images running on the hub cluster
-    #     - name: rhtpa.localImageDiscovery.enabled
     #       value: true
     #     # SYFT Images to Scan (Static List)
     #     # We use a comma-separated string override to avoid ArgoCD "Fresh Install OutOfSync"
