@@ -1,0 +1,30 @@
+---
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: qtodo-build-artifact
+  namespace: {{ .Values.global.namespace }}
+spec:
+  description: >-
+    Builds a qtodo application using Red Hat Mandrel image.
+  workspaces:
+    - name: source
+      description: The workspace where the source code is cloned.
+  steps:
+    - name: run-qtodo-build
+      image: {{ .Values.tasks.images.mandrel }}
+      workingDir: $(workspaces.source.path)
+      script: |
+        #!/bin/bash
+        set -e
+
+        echo "Starting build with Maven..."
+        ./mvnw -s settings.xml package -DskipTests -Dquarkus.package.jar.type=uber-jar
+        
+        # Verify the jar exists
+        if [ ! -f target/*.jar ]; then
+            echo "Error: No JAR file found in target/ directory after build"
+            exit 1
+        else
+            echo "Build successful"
+        fi
