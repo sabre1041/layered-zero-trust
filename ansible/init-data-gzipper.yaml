@@ -1,0 +1,70 @@
+- name: Gzip initdata
+  become: false
+  connection: local
+  hosts: localhost
+  gather_facts: false
+  vars:
+    kubeconfig: "{{ lookup('env', 'KUBECONFIG') }}"
+    cluster_platform: "{{ global.clusterPlatform | default('none') | lower }}"
+    hub_domain: "{{ global.hubClusterDomain | default('none')  | lower}}"
+    image_security_policy: "{{ coco.imageSecurityPolicy | default('insecure') }}"
+    template_src: "initdata-default.toml.tpl"
+  tasks:
+    - name: Create temporary working directory
+      ansible.builtin.tempfile:
+        state: directory
+        suffix: initdata
+      register: tmpdir
+    - name: Read KBS TLS secret from Kubernetes
+      kubernetes.core.k8s_info:
+        kubeconfig: "{{ lookup('env', 'KUBECONFIG') }}"
+        api_version: v1
+        kind: Secret
+        name: kbs-tls-self-signed
+        namespace: imperative
+      register: kbs_secret_result
+
+    - name: Extract and decode certificate from secret
+      ansible.builtin.set_fact:
+        trustee_cert: "{{ kbs_secret_result.resources[0].data['tls.crt'] | b64decode }}"
+      when: kbs_secret_result.resources | length > 0
+
+    - name: Fail if certificate not found
+      ansible.builtin.fail:
+        msg: "KBS TLS certificate not found in secret 'kbs-tls-self-signed' in namespace 'imperative'"
+      when: kbs_secret_result.resources | length == 0
+
+    - name: Define temp file paths
+      ansible.builtin.set_fact:
+        rendered_path: "{{ tmpdir.path }}/rendered.toml"
+        gz_path: "{{ tmpdir.path }}/rendered.toml.gz"
+
+    - name: Render template to temp file
+      ansible.builtin.template:
+        src: "{{ template_src }}"
+        dest: "{{ rendered_path }}"
+        mode: "0600"
+
+
+    - name: Gzip the rendered content
+      ansible.builtin.shell: |
+        gzip -c "{{ rendered_path }}" > "{{ gz_path }}"
+      changed_when: true
+
+    - name: Read gzip as base64
+      ansible.builtin.slurp:
+        path: "{{ gz_path }}"
+      register: gz_slurped
+
+    - name: Create/update ConfigMap with gzipped+base64 content
+      kubernetes.core.k8s:
+        kubeconfig: "{{ kubeconfig | default(omit) }}"
+        state: present
+        definition:
+          apiVersion: v1
+          kind: ConfigMap
+          metadata:
+            name: "initdata"
+            namespace: "imperative"
+          data:
+            INITDATA: "{{ gz_slurped.content }}"

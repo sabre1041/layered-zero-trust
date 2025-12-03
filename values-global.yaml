@@ -6,7 +6,7 @@ global:
     syncPolicy: Automatic
     installPlanApproval: Automatic
 main:
-  clusterGroupName: hub
+  clusterGroupName: coco-dev
   multiSourceConfig:
     enabled: true
     clusterGroupChartVersion: "0.9.*"

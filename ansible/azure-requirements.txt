@@ -1,0 +1,5 @@
+azure-identity>=1.19.0
+azure-mgmt-core>=1.4.0
+azure-mgmt-managementgroups>=1.0.0
+azure-mgmt-network>=25.0.0
+azure-mgmt-resource>=23.0.0
