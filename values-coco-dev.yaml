@@ -325,6 +325,11 @@ clusterGroup:
       project: hub
       chart: sandboxed-policies
       chartVersion: 0.0.*
+    hello-coco:
+      name: hello-coco
+      namespace: zero-trust-workload-identity-manager
+      project: hub
+      path: charts/hello-coco
   argoCD:
     resourceExclusions: |
       - apiGroups:
