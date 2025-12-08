@@ -1,0 +1,93 @@
+{{- if .Values.rhtpa.enabled }}
+---
+# Policy to ensure RHTPA operator is ready before creating TrustedProfileAnalyzer CR
+# This helps avoid the operator bug where initialization jobs aren't created
+apiVersion: policy.open-cluster-management.io/v1
+kind: Policy
+metadata:
+  name: policy-rhtpa-operator-ready
+  namespace: {{ .Values.rhtpa.namespace }}
+  labels:
+    {{- include "rhtpa-operator.labels" . | nindent 4 }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "40"  # Before CR creation (wave 50)
+    policy.open-cluster-management.io/standards: NIST SP 800-53
+    policy.open-cluster-management.io/categories: CM Configuration Management
+    policy.open-cluster-management.io/controls: CM-2 Baseline Configuration
+spec:
+  remediationAction: inform  # Just check, don't enforce
+  disabled: false
+  policy-templates:
+    - objectDefinition:
+        apiVersion: policy.open-cluster-management.io/v1
+        kind: ConfigurationPolicy
+        metadata:
+          name: policy-rhtpa-operator-ready
+        spec:
+          remediationAction: inform
+          severity: high
+          object-templates:
+            # Check that RHTPA operator deployment is ready
+            - complianceType: musthave
+              objectDefinition:
+                apiVersion: apps/v1
+                kind: Deployment
+                metadata:
+                  name: rhtpa-operator-controller-manager
+                  namespace: rhtpa-operator
+                status:
+                  conditions:
+                    - type: Available
+                      status: "True"
+                  readyReplicas: 1
+            # Check that OBC (NooBaa bucket) is ready
+            - complianceType: musthave
+              objectDefinition:
+                apiVersion: objectbucket.io/v1alpha1
+                kind: ObjectBucketClaim
+                metadata:
+                  name: {{ .Values.rhtpa.objectStorage.objectBucketClaim.name }}
+                  namespace: {{ .Values.rhtpa.namespace }}
+                status:
+                  phase: Bound
+---
+apiVersion: policy.open-cluster-management.io/v1
+kind: PlacementBinding
+metadata:
+  name: binding-policy-rhtpa-operator-ready
+  namespace: {{ .Values.rhtpa.namespace }}
+  labels:
+    {{- include "rhtpa-operator.labels" . | nindent 4 }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "40"
+placementRef:
+  name: placement-policy-rhtpa-operator-ready
+  kind: PlacementRule
+  apiGroup: apps.open-cluster-management.io
+subjects:
+  - name: policy-rhtpa-operator-ready
+    kind: Policy
+    apiGroup: policy.open-cluster-management.io
+---
+apiVersion: apps.open-cluster-management.io/v1
+kind: PlacementRule
+metadata:
+  name: placement-policy-rhtpa-operator-ready
+  namespace: {{ .Values.rhtpa.namespace }}
+  labels:
+    {{- include "rhtpa-operator.labels" . | nindent 4 }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "40"
+spec:
+  clusterConditions:
+    - status: "True"
+      type: ManagedClusterConditionAvailable
+  clusterSelector:
+    matchExpressions:
+      - key: name
+        operator: In
+        values:
+          - local-cluster
+---
+{{- end }}
+
