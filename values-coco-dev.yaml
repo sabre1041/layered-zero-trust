@@ -35,11 +35,12 @@ clusterGroup:
   namespaces:
     - open-cluster-management
     - vault
-    - qtodo
+    # - qtodo  # COMMENTED OUT for coco-dev
     - golang-external-secrets
-    - keycloak-system:
-        operatorGroup: true
-        targetNamespace: keycloak-system
+    # COMMENTED OUT for coco-dev: Keycloak not needed
+    # - keycloak-system:
+    #     operatorGroup: true
+    #     targetNamespace: keycloak-system
     - cert-manager
     - cert-manager-operator:
         operatorGroup: true
@@ -86,11 +87,12 @@ clusterGroup:
       namespace: cert-manager-operator
       channel: stable-v1
       catalogSource: redhat-marketplace
-    rhbk:
-      name: rhbk-operator
-      namespace: keycloak-system
-      channel: stable-v26.2
-      catalogSource: redhat-marketplace
+    # COMMENTED OUT for coco-dev: Keycloak operator not needed
+    # rhbk:
+    #   name: rhbk-operator
+    #   namespace: keycloak-system
+    #   channel: stable-v26.2
+    #   catalogSource: redhat-marketplace
     zero-trust-workload-identity-manager:
       name: openshift-zero-trust-workload-identity-manager
       namespace: zero-trust-workload-identity-manager
@@ -264,11 +266,12 @@ clusterGroup:
       project: hub
       chart: golang-external-secrets
       chartVersion: 0.1.*
-    rh-keycloak:
-      name: rh-keycloak
-      namespace: keycloak-system
-      project: hub
-      path: charts/keycloak
+    # COMMENTED OUT for coco-dev: Keycloak is for user auth (not needed for CoCo testing)
+    # rh-keycloak:
+    #   name: rh-keycloak
+    #   namespace: keycloak-system
+    #   project: hub
+    #   path: charts/keycloak
     rh-cert-manager:
       name: rh-cert-manager
       namespace: cert-manager-operator
@@ -282,22 +285,23 @@ clusterGroup:
       overrides:
         - name: spire.clusterName
           value: hub
-    qtodo:
-      name: qtodo
-      namespace: qtodo
-      project: hub
-      path: charts/qtodo
-      overrides:
-        - name: app.oidc.enabled
-          value: "true"
-        - name: app.spire.enabled
-          value: "true"
-        - name: app.vault.url
-          value: https://vault.vault.svc.cluster.local:8200
-        - name: app.vault.role
-          value: qtodo
-        - name: app.vault.secretPath
-          value: secret/data/global/qtodo
+    # COMMENTED OUT for coco-dev: qtodo demo app requires Keycloak/Vault (not needed for CoCo testing)
+    # qtodo:
+    #   name: qtodo
+    #   namespace: qtodo
+    #   project: hub
+    #   path: charts/qtodo
+    #   overrides:
+    #     - name: app.oidc.enabled
+    #       value: "true"
+    #     - name: app.spire.enabled
+    #       value: "true"
+    #     - name: app.vault.url
+    #       value: https://vault.vault.svc.cluster.local:8200
+    #     - name: app.vault.role
+    #       value: qtodo
+    #     - name: app.vault.secretPath
+    #       value: secret/data/global/qtodo
     trustee:
       name: trustee
       namespace: trustee-operator-system
