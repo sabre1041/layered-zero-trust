@@ -34,18 +34,18 @@ clusterGroup:
         annotations:
           openshift.io/cluster-monitoring: "true"
           argocd.argoproj.io/sync-wave: "-5"  # Propagated to OperatorGroup by framework
-    # - quay-enterprise:
-    #     annotations:
-    #       argocd.argoproj.io/sync-wave: "1"  # Create before NooBaa and all Quay components
-    #     labels:
-    #       openshift.io/cluster-monitoring: "true"
+    - quay-enterprise:
+        annotations:
+          argocd.argoproj.io/sync-wave: "1"  # Create before NooBaa and all Quay components
+        labels:
+          openshift.io/cluster-monitoring: "true"
     # RHTAS namespace (required when RHTAS application is enabled)
     # COMMENTED OUT: Uncomment to enable RHTAS with SPIFFE signing
-    # - trusted-artifact-signer:
-    #     annotations:
-    #       argocd.argoproj.io/sync-wave: "1"  # Auto-created by RHTAS operator
-    #     labels:
-    #       openshift.io/cluster-monitoring: "true"
+    - trusted-artifact-signer:
+        annotations:
+          argocd.argoproj.io/sync-wave: "1"  # Auto-created by RHTAS operator
+        labels:
+          openshift.io/cluster-monitoring: "true"
     - rhtpa-operator:
         operatorGroup: true
         targetNamespace: rhtpa-operator
@@ -102,21 +102,21 @@ clusterGroup:
       channel: stable-4.19
       annotations:
         argocd.argoproj.io/sync-wave: "-4"  # Install after OperatorGroup (-5)
-    # quay-operator:
-    #   name: quay-operator
-    #   namespace: openshift-operators
-    #   channel: stable-3.15
-    #   annotations:
-    #     argocd.argoproj.io/sync-wave: "-3"  # Install after ODF operator
+    quay-operator:
+      name: quay-operator
+      namespace: openshift-operators
+      channel: stable-3.15
+      annotations:
+        argocd.argoproj.io/sync-wave: "-3"  # Install after ODF operator
     # RHTAS operator subscription (required when RHTAS application is enabled)
     # COMMENTED OUT: Uncomment to enable RHTAS with SPIFFE integration
-    # rhtas-operator:
-    #   name: rhtas-operator
-    #   namespace: openshift-operators
-    #   channel: stable
-    #   annotations:
-    #     argocd.argoproj.io/sync-wave: "-2"  # Install after Quay operator, before applications
-    #   catalogSource: redhat-operators
+    rhtas-operator:
+      name: rhtas-operator
+      namespace: openshift-operators
+      channel: stable
+      annotations:
+        argocd.argoproj.io/sync-wave: "-2"  # Install after Quay operator, before applications
+      catalogSource: redhat-operators
     # RHTPA operator subscription
     # Channel: stable-v1.1 provides latest 1.1.x patch updates
     # Note: No direct upgrade path from 1.1.x to 2.x (requires fresh install)
@@ -222,37 +222,37 @@ clusterGroup:
       annotations:
         argocd.argoproj.io/sync-wave: "5"  # Deploy after core services
     # Quay Container Registry (uses NooBaa for storage)
-    # quay-registry:
-    #   name: quay-registry
-    #   namespace: quay-enterprise
-    #   project: hub  
-    #   path: charts/quay-registry
-    #   annotations:
-    #     argocd.argoproj.io/sync-wave: "10"  # Deploy after NooBaa storage backend
+    quay-registry:
+      name: quay-registry
+      namespace: quay-enterprise
+      project: hub  
+      path: charts/quay-registry
+      annotations:
+        argocd.argoproj.io/sync-wave: "10"  # Deploy after NooBaa storage backend
     # RHTAS with SPIFFE Integration
     # COMMENTED OUT: Uncomment to enable RHTAS with SPIFFE and Email issuers
     # Depends on: Vault, SPIRE, Keycloak (for Email OIDC issuer if used)
-    # trusted-artifact-signer:
-    #   name: trusted-artifact-signer
-    #   namespace: trusted-artifact-signer
-    #   project: hub
-    #   path: charts/rhtas-operator
-    #   annotations:
-    #     argocd.argoproj.io/sync-wave: "15"  # Deploy after dependencies
-    #   overrides:
-    #     # OIDC Issuer Configuration - Both can be enabled simultaneously
-    #     # Enable SPIFFE issuer for workload identity
-    #     - name: rhtas.zeroTrust.spire.enabled
-    #       value: "true"
-    #     - name: rhtas.zeroTrust.spire.trustDomain
-    #       value: "apps.{{ $.Values.global.clusterDomain }}"
-    #     - name: rhtas.zeroTrust.spire.issuer
-    #       value: "https://spire-spiffe-oidc-discovery-provider.apps.{{ $.Values.global.clusterDomain }}"
-    #     # Enable Keycloak issuer for user/email authentication
-    #     - name: rhtas.zeroTrust.email.enabled
-    #       value: "true"
-    #     - name: rhtas.zeroTrust.email.issuer
-    #       value: https://keycloak.apps.{{ $.Values.global.clusterDomain }}/realms/ztvp
+    trusted-artifact-signer:
+      name: trusted-artifact-signer
+      namespace: trusted-artifact-signer
+      project: hub
+      path: charts/rhtas-operator
+      annotations:
+        argocd.argoproj.io/sync-wave: "15"  # Deploy after dependencies
+      overrides:
+        # OIDC Issuer Configuration - Both can be enabled simultaneously
+        # Enable SPIFFE issuer for workload identity
+        - name: rhtas.zeroTrust.spire.enabled
+          value: "true"
+        - name: rhtas.zeroTrust.spire.trustDomain
+          value: "apps.{{ $.Values.global.clusterDomain }}"
+        - name: rhtas.zeroTrust.spire.issuer
+          value: "https://spire-spiffe-oidc-discovery-provider.apps.{{ $.Values.global.clusterDomain }}"
+        # Enable Keycloak issuer for user/email authentication
+        - name: rhtas.zeroTrust.email.enabled
+          value: "true"
+        - name: rhtas.zeroTrust.email.issuer
+          value: https://keycloak.apps.{{ $.Values.global.clusterDomain }}/realms/ztvp
     # RHTPA (Red Hat Trusted Profile Analyzer) with SPIFFE Integration
     # Depends on: NooBaa MCG (storage), Vault (secrets), SPIRE (identity), Keycloak (auth)
     trusted-profile-analyzer:
