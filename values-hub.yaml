@@ -363,9 +363,14 @@ clusterGroup:
         #   value: quay-user-password
     # UC-02: Secure Supply Chain - Uncomment to enable
     # supply-chain:
-    #   name: supply-chain
+    #  name: supply-chain
     #  project: hub
     #  path: charts/supply-chain
+    #  ignoreDifferences:
+    #    - group: ""
+    #      kind: ServiceAccount
+    #      jqPathExpressions:
+    #        - .imagePullSecrets[]|select(.name | contains("-dockercfg-"))
     #  overrides:
     #    # Don't forget to uncomment the RHTAS and RHTPA components in this same file
     #    - name: rhtas.enabled
