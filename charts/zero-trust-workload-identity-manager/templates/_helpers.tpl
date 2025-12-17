@@ -62,21 +62,6 @@ Create the name of the service account to use
 {{- end }}
 
 {{/*
-Create the Spire server persistence configuration.
-*/}}
-{{- define "zero-trust-workload-identity-manager.server.persistence" -}}
-{{- if (eq .Values.spire.server.persistence.type "pvc") }}
-size: {{ .Values.spire.server.persistence.size }}
-accessMode: {{ .Values.spire.server.persistence.accessMode }}
-{{- else if (eq .Values.spire.server.persistence.type "hostPath") }}
-hostPath: {{ .Values.spire.server.persistence.hostPath }}
-{{- else }}
-{{- fail (printf "Unsupported persistence type: '%s'. Valid values are 'pvc' or 'hostPath'" .Values.spire.server.persistence.type) }}
-{{- end }}
-type: {{ .Values.spire.server.persistence.type }}
-{{- end }}
-
-{{/*
 Create the name of the service account to use
 */}}
 {{- define "zero-trust-workload-identity-manager.jwtIssuer" -}}

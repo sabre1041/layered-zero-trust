@@ -1,4 +1,4 @@
-{{- if not (eq .Values.spire.oidcDiscoveryProvider.ingress.operatorManaged "true") -}}
+{{- if not (eq .Values.spire.oidcDiscoveryProvider.ingress.operatorManaged "true") }}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
