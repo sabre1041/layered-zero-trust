@@ -11,7 +11,7 @@ app:
   images:
     main:
       name: quay.io/validatedpatterns/qtodo
-      tag: latest
+      version: latest
       # Modified to Always to force a pull so we can test changes to the container image without requiring manual deletion of images or restarts of argo
       pullPolicy: Always
       registry:
@@ -23,11 +23,15 @@ app:
         passwordVaultKey: password
     spiffeHelper:
       name: ghcr.io/spiffe/spiffe-helper
-      tag: 0.10.1
+      version: 0.10.1
       pullPolicy: IfNotPresent
     spiffeVaultClient:
       name: registry.redhat.io/ubi9/python-311
-      tag: latest
+      version: latest
+      pullPolicy: IfNotPresent
+    postgresql:
+      name: registry.redhat.io/rhel8/postgresql-16
+      version: latest
       pullPolicy: IfNotPresent
 
   oidc:

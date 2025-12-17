@@ -25,7 +25,7 @@ spec:
     spec:
       containers:
       - name: postgres
-        image: registry.redhat.io/rhel8/postgresql-16
+        image: {{ template "qtodo.image" .Values.app.images.postgresql }}
         imagePullPolicy: IfNotPresent
         env:
         - name: POSTGRESQL_DATABASE

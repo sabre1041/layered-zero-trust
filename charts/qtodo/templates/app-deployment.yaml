@@ -29,7 +29,7 @@ spec:
 {{- if eq .Values.app.spire.enabled true }}
       initContainers:
       - name: init-spiffe-helper
-        image: {{ .Values.app.images.spiffeHelper.name }}:{{ .Values.app.images.spiffeHelper.tag }}
+        image: {{ template "qtodo.image" .Values.app.images.spiffeHelper }}
         imagePullPolicy: {{ .Values.app.images.spiffeHelper.pullPolicy }}
         args:
           - '-config'
@@ -46,7 +46,7 @@ spec:
           - name: svids
             mountPath: /svids
       - name: init-spiffe-vault-client
-        image: {{ .Values.app.images.spiffeVaultClient.name }}:{{ .Values.app.images.spiffeVaultClient.tag }}
+        image: {{ template "qtodo.image" .Values.app.images.spiffeVaultClient }}
         imagePullPolicy: {{ .Values.app.images.spiffeVaultClient.pullPolicy }}
         command:
           - python3
@@ -76,7 +76,7 @@ spec:
       containers:
 {{- if and .Values.app.spire.enabled .Values.app.spire.sidecars }}
       - name: spiffe-helper
-        image: {{ .Values.app.images.spiffeHelper.name }}:{{ .Values.app.images.spiffeHelper.tag }}
+        image: {{ template "qtodo.image" .Values.app.images.spiffeHelper }}
         imagePullPolicy: {{ .Values.app.images.spiffeHelper.pullPolicy }}
         args:
           - '-config'
@@ -93,7 +93,7 @@ spec:
           - name: svids
             mountPath: /svids
       - name: spiffe-vault-client
-        image: {{ .Values.app.images.spiffeVaultClient.name }}:{{ .Values.app.images.spiffeVaultClient.tag }}
+        image: {{ template "qtodo.image" .Values.app.images.spiffeVaultClient }}
         imagePullPolicy: {{ .Values.app.images.spiffeVaultClient.pullPolicy }}
         command:
         - python3
@@ -124,7 +124,7 @@ spec:
           readOnly: true
 {{- end }}
       - name: qtodo
-        image: {{ .Values.app.images.main.name }}:{{ .Values.app.images.main.tag }}
+        image: {{ template "qtodo.image" .Values.app.images.main }}
         imagePullPolicy: {{ .Values.app.images.main.pullPolicy }}
         ports:
         - containerPort: 8080
