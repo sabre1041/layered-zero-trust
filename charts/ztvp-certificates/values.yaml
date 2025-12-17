@@ -102,7 +102,7 @@ job:
       memory: 128Mi
     limits:
       cpu: 200m
-      memory: 256Mi
+      memory: 512Mi
   
   # Job retry policy
   backoffLimit: 3
