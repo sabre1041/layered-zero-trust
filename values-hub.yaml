@@ -65,7 +65,7 @@ clusterGroup:
         annotations:
           openshift.io/cluster-monitoring: "true"
     # UC-02: Uncomment to enable OpenShift Pipelines
-    # - openshift-pipelines
+    - openshift-pipelines
   subscriptions:
     acm:
       name: advanced-cluster-management
@@ -78,9 +78,9 @@ clusterGroup:
       channel: stable-v1
       catalogSource: redhat-marketplace
     # UC-02: Uncomment to enable OpenShift Pipelines
-    # openshift-pipelines:
-    #   name: openshift-pipelines-operator-rh
-    #   namespace: openshift-operators
+    openshift-pipelines:
+      name: openshift-pipelines-operator-rh
+      namespace: openshift-operators
     rhbk:
       name: rhbk-operator
       namespace: keycloak-system
@@ -252,11 +252,11 @@ clusterGroup:
             policies:
               - global-secret
           # RHTPA vault role
-          # - name: rhtpa
-          #   audience: rhtpa
-          #   subject: spiffe://apps.{{ $.Values.global.clusterDomain }}/ns/trusted-profile-analyzer/sa/rhtpa
-          #   policies:
-          #     - global-secret
+          - name: rhtpa
+            audience: rhtpa
+            subject: spiffe://apps.{{ $.Values.global.clusterDomain }}/ns/trusted-profile-analyzer/sa/rhtpa
+            policies:
+              - global-secret
     # Shared Object Storage Backend
     # Required for RHTPA and QUAY (provides S3-compatible storage via NooBaa MCG)
     # NooBaa MCG provides S3-compatible object storage for multiple applications
