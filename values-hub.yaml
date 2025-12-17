@@ -351,7 +351,7 @@ clusterGroup:
           value: secret/data/global/qtodo
         # For UC-02, we changed the qtodo image to use the one built in the secure supply chain
         # - name: app.images.main.name
-        #  value: quay-registry-quay-quay-enterprise.apps.hub.example.com/org/qtodo
+        #   value: quay-registry-quay-quay-enterprise.apps.hub.example.com/org/qtodo
         # Uncomment to enable registry authentication
         # - name: app.images.main.registry.auth
         #   value: true
@@ -361,9 +361,14 @@ clusterGroup:
         #   value: quay-user-password
     # UC-02: Secure Supply Chain - Uncomment to enable
     # supply-chain:
-    #   name: supply-chain
+    #  name: supply-chain
     #  project: hub
     #  path: charts/supply-chain
+    #  ignoreDifferences:
+    #    - group: ""
+    #      kind: ServiceAccount
+    #      jqPathExpressions:
+    #        - .imagePullSecrets[]|select(.name | contains("-dockercfg-"))
     #  overrides:
     #    # Don't forget to uncomment the RHTAS and RHTPA components in this same file
     #    - name: rhtas.enabled
