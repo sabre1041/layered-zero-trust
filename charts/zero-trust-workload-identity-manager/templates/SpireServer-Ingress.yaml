@@ -1,16 +1,16 @@
-{{- if .Values.spire.server.ingress.enabled -}}
+{{- if not (eq .Values.spire.server.federation.ingress.operatorManaged "true") }}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: spire-server
   namespace: {{ .Release.Namespace }}
-  {{- if .Values.spire.server.ingress.annotations }}
+  {{- if .Values.spire.server.federation.ingress.annotations }}
   annotations:
-  {{- tpl (toYaml .Values.spire.server.ingress.annotations) . | nindent 4 }}
+  {{- tpl (toYaml .Values.spire.server.federation.ingress.annotations) . | nindent 4 }}
   {{- end }}
 spec:
   rules:
-    - host: {{ tpl .Values.spire.server.ingress.host $ }}
+    - host: {{ tpl .Values.spire.server.federation.ingress.host $ }}
       http:
         paths:
           - pathType: ImplementationSpecific

@@ -3,14 +3,13 @@ kind: SpireServer
 metadata:
   name: cluster
 spec:
-  trustDomain: {{ tpl .Values.spire.trustDomain $ }}
-  clusterName: {{ .Values.spire.clusterName }}
   caSubject:
     commonName: {{ .Values.spire.server.ca.commonName }}
     country: {{ .Values.spire.server.ca.country }}
     organization: {{ .Values.spire.server.ca.organization }}
   persistence:
-    {{- include "zero-trust-workload-identity-manager.server.persistence" . | nindent 4 }}
+    size: {{ .Values.spire.server.persistence.size }}
+    accessMode: {{ .Values.spire.server.persistence.accessMode }}
   datastore:
     databaseType: {{ .Values.spire.server.datastore.databaseType }}
     connectionString: {{ .Values.spire.server.datastore.connectionString }}
@@ -18,3 +17,13 @@ spec:
     maxIdleConns: {{ .Values.spire.server.datastore.maxIdleConns }}
     connMaxLifetime: {{ .Values.spire.server.datastore.connMaxLifetime }}
   jwtIssuer: {{ include "zero-trust-workload-identity-manager.jwtIssuer" . }}
+{{- if (eq .Values.spire.server.federation.ingress.operatorManaged "true") }}
+  federation:
+    bundleEndpoint:
+      profile: {{ .Values.spire.server.federation.bundleEndpoint.profile }}
+{{- if .Values.spire.server.federation.federatesWith }}
+    federatesWith:
+      {{- toYaml .Values.spire.server.federation.federatesWith | nindent 6 }}
+{{- end }}
+    managedRoute: {{ (.Values.spire.server.federation.ingress.operatorManaged | default false) | quote }}
+{{- end }}

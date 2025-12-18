@@ -3,7 +3,5 @@ kind: SpireOIDCDiscoveryProvider
 metadata:
   name: cluster
 spec:
-  trustDomain: {{ tpl .Values.spire.trustDomain $ }}
-  agentSocketName: {{ .Values.spire.oidcDiscoveryProvider.agentSocketName }}
   jwtIssuer: {{ include "zero-trust-workload-identity-manager.jwtIssuer" . }}
-  managedRoute: {{ (.Values.spire.oidcDiscoveryProvider.ingress.operatorManaged | default false) | quote }}
+  managedRoute: {{ (.Values.spire.oidcDiscoveryProvider.ingress.operatorManaged | default true) | quote }}

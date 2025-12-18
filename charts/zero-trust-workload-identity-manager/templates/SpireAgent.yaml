@@ -3,8 +3,6 @@ kind: SpireAgent
 metadata:
   name: cluster
 spec:
-  trustDomain: {{ tpl .Values.spire.trustDomain $ }}
-  clusterName: {{ .Values.spire.clusterName }}
   nodeAttestor:
     k8sPSATEnabled: {{ .Values.spire.agent.nodeAttestor.k8sPSATEnabled | quote }}
   workloadAttestors:
