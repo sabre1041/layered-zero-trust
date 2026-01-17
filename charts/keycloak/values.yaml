@@ -4,6 +4,11 @@ global:
     kind: ClusterSecretStore
     name: vault-backend
 keycloak:
+  adminUser:
+    enabled: true
+    username: admin
+    passwordVaultKey: secret/data/global/keycloak
+    secretName: keycloak-admin-user
   defaultConfig: true
   defaultRealm:
     clients:

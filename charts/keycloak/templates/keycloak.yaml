@@ -6,6 +6,11 @@ metadata:
   annotations:
     argocd.argoproj.io/sync-wave: "5"
 spec:
+{{- if eq .Values.keycloak.adminUser.enabled true }}
+  bootstrapAdmin:
+    user:
+      secret: {{ .Values.keycloak.adminUser.secretName }}
+{{- end }}
   db:
     host: postgresql-db
     passwordSecret:
