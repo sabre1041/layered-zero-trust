@@ -1,0 +1,16 @@
+{{- if and .Values.app.spire.enabled .Values.app.truststore.enabled }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: qtodo-truststore-java
+  namespace: qtodo
+  annotations:
+    argocd.argoproj.io/sync-wave: '10'
+  labels:
+    app: qtodo
+    app.kubernetes.io/component: truststore-init
+data:
+  qtodo-truststore.java: |
+{{- .Files.Get "files/qtodo-truststore.java" | nindent 4 }}
+{{- end }}

@@ -32,7 +32,8 @@ jobs:
           DEFAULT_BRANCH: main
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # Exclude bash scripts with Helm templating (they contain {{ }} syntax)
-          FILTER_REGEX_EXCLUDE: .*\.sh\.tpl$
+          # Exclude qtodo-truststore.java (default package, no package-info.java needed)
+          FILTER_REGEX_EXCLUDE: .*\.sh\.tpl$|.*qtodo-truststore\.java$
           # These are the validation we disable atm
           VALIDATE_ANSIBLE: false
           VALIDATE_BASH: false

@@ -18,7 +18,7 @@ spec:
     metadata:
       annotations:
         checksum/app-configmap-envvars: {{ include (print $.Template.BasePath "/app-config-env.yaml") . | sha256sum }}
-{{- if eq .Values.app.spire.enabled true }}
+{{- if .Values.app.spire.enabled }}
         checksum/app-spiffe-helper-config: {{ include (print $.Template.BasePath "/spiffe-helper-config.yaml") . | sha256sum }}
         checksum/app-spiffe-vault-client-config: {{ include (print $.Template.BasePath "/spiffe-vault-client-config.yaml") . | sha256sum }}
 {{- end }}
@@ -27,70 +27,20 @@ spec:
         deployment: qtodo
       name: qtodo
     spec:
-{{- if eq .Values.app.spire.enabled true }}
+{{- if .Values.app.spire.enabled }}
       initContainers:
+{{- if .Values.app.truststore.enabled }}
       - name: init-ca-truststore
         image: registry.redhat.io/ubi9/openjdk-17:latest
         imagePullPolicy: IfNotPresent
         command:
-          - /bin/bash
-          - -c
-          - |
-            set -e
-            echo "Converting CA bundle to PKCS12 truststore using Java KeyStore API..."
-            
-            # Validate password is provided
-            if [ -z "$TRUSTSTORE_PASSWORD" ]; then
-              echo "ERROR: TRUSTSTORE_PASSWORD not set"
-              exit 1
-            fi
-            
-            CA_BUNDLE="/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem"
-            TRUSTSTORE_PATH="/run/secrets/truststore/truststore.p12"
-            
-            # Verify CA bundle exists
-            if [ ! -f "$CA_BUNDLE" ]; then
-              echo "ERROR: CA bundle not found at $CA_BUNDLE"
-              exit 1
-            fi
-            
-            # Count certificates in bundle
-            CERT_COUNT=$(grep -c "BEGIN CERTIFICATE" "$CA_BUNDLE" || echo "0")
-            echo "Found $CERT_COUNT certificates in CA bundle"
-            
-            # Use jshell to bulk-import all certificates (single JVM, much faster than keytool loop)
-            jshell -R-Dpassword="$TRUSTSTORE_PASSWORD" -R-Dbundle="$CA_BUNDLE" -R-Doutput="$TRUSTSTORE_PATH" <<'JSHELL'
-            import java.security.*;
-            import java.security.cert.*;
-            import java.io.*;
-            import java.nio.file.*;
-            
-            String password = System.getProperty("password");
-            String bundlePath = System.getProperty("bundle");
-            String outputPath = System.getProperty("output");
-            
-            KeyStore ks = KeyStore.getInstance("PKCS12");
-            ks.load(null, password.toCharArray());
-            
-            CertificateFactory cf = CertificateFactory.getInstance("X.509");
-            byte[] pemBytes = Files.readAllBytes(Path.of(bundlePath));
-            
-            var certs = cf.generateCertificates(new ByteArrayInputStream(pemBytes));
-            int i = 0;
-            for (var cert : certs) {
-                ks.setCertificateEntry("ztvp-ca-" + String.format("%03d", i++), cert);
-            }
-            
-            try (FileOutputStream fos = new FileOutputStream(outputPath)) {
-                ks.store(fos, password.toCharArray());
-            }
-            System.out.println("Imported " + i + " certificates into PKCS12 truststore");
-            /exit
-            JSHELL
-            
-            echo "Successfully created PKCS12 truststore"
-            ls -lh "$TRUSTSTORE_PATH"
+          - java
+          - /usr/local/bin/qtodo-truststore.java
         env:
+          - name: CA_BUNDLE
+            value: /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem
+          - name: TRUSTSTORE_PATH
+            value: /run/secrets/truststore/truststore.p12
           - name: TRUSTSTORE_PASSWORD
             valueFrom:
               secretKeyRef:
@@ -102,6 +52,9 @@ spec:
             readOnly: true
           - name: truststore
             mountPath: /run/secrets/truststore
+          - name: qtodo-truststore-java
+            mountPath: /usr/local/bin
+{{- end }}
       - name: wait-for-keycloak
         image: registry.redhat.io/openshift4/ose-tools-rhel9:latest
         imagePullPolicy: IfNotPresent
@@ -267,7 +220,7 @@ spec:
           value: '8080'
         - name: QUARKUS_HIBERNATE_ORM_SCHEMA_MANAGEMENT_STRATEGY
           value: 'drop-and-create'
-{{- if eq .Values.app.spire.enabled false }}
+{{- if not .Values.app.spire.enabled }}
         - name: QUARKUS_DATASOURCE_USERNAME
           valueFrom:
             secretKeyRef:
@@ -286,7 +239,7 @@ spec:
             secretKeyRef:
               name: oidc-client-secret
               key: client-secret
-{{- if eq .Values.app.truststore.enabled true }}
+{{- if .Values.app.truststore.enabled }}
         # Truststore password from Vault secret
         - name: TRUSTSTORE_PASSWORD
           valueFrom:
@@ -298,13 +251,15 @@ spec:
           value: "-Djavax.net.ssl.trustStore=/run/secrets/truststore/truststore.p12 -Djavax.net.ssl.trustStoreType=PKCS12 -Djavax.net.ssl.trustStorePassword=$(TRUSTSTORE_PASSWORD)"
 {{- end }}
 {{- end }}
-{{- if eq .Values.app.spire.enabled true }}
+{{- if .Values.app.spire.enabled }}
         volumeMounts:
           - name: db-credentials
             mountPath: /run/secrets/db-credentials
+{{- if .Values.app.truststore.enabled }}
           - name: truststore
             mountPath: /run/secrets/truststore
             readOnly: true
+{{- end }}
           # Mount ZTVP CA bundle for non-Java tools (curl, openssl, etc.)
           - name: ztvp-trusted-ca
             mountPath: /etc/pki/ca-trust/extracted/pem
@@ -312,7 +267,7 @@ spec:
 {{- end }}
         resources: {}
       serviceAccountName: qtodo
-{{- if eq .Values.app.spire.enabled true }}
+{{- if .Values.app.spire.enabled }}
       volumes:
         - name: spiffe-helper-config
           configMap:
@@ -333,6 +288,11 @@ spec:
           configMap:
             name: ztvp-trusted-ca
             defaultMode: 420
+{{- if .Values.app.truststore.enabled }}
         - name: truststore
           emptyDir: {}
+        - name: qtodo-truststore-java
+          configMap:
+            name: qtodo-truststore-java
+{{- end }}
 {{- end }}
