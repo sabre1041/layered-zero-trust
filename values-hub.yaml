@@ -174,19 +174,21 @@ clusterGroup:
             - /
       # Use extraValueFiles for complex nested structures like additionalCertificates
       # The validated patterns framework only processes 'overrides' as --set parameters
-      # Edit /overrides/values-ztvp-certificates.yaml to configure:
-      #   - Additional CA certificates (additionalCertificates array)
-      #   - Automatic rollout restart for consuming applications
       extraValueFiles:
         - /overrides/values-ztvp-certificates.yaml
       overrides:
         # Disable Job TTL to prevent ArgoCD OutOfSync when Kubernetes deletes completed Jobs
-        # The initial Job runs once during first sync; CronJob handles ongoing extraction
+        # The initial Job runs once during first sync and stays around
+        # The CronJob handles ongoing certificate extraction
         - name: debug.keepFailedJobs
-          value: "true"
+          value: "true"  # This disables ttlSecondsAfterFinished
         
-        # Enable verbose logging for troubleshooting (uncomment if needed)
+        # Debug settings: Enable for troubleshooting certificate extraction issues
+        # verbose: Enables bash 'set -x' for detailed script execution logging
+        # keepFailedJobs: Prevents failed jobs from auto-cleanup (useful for debugging)
         # - name: debug.verbose
+        #   value: "true"
+        # - name: debug.keepFailedJobs
         #   value: "true"
         
         # Primary custom CA: Use secretRef to reference an existing Kubernetes secret containing CA certificates
@@ -592,4 +594,3 @@ acmManagedClusters:
   #      cloud: auto-detect
   #      vendor: auto-detect
   #    kubeconfigVaultPath: secret/data/hub/kubeconfig-spoke-2
-
