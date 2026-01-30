@@ -433,6 +433,11 @@ clusterGroup:
       namespace: qtodo
       project: hub
       path: charts/qtodo
+      ignoreDifferences:
+        - group: ""
+          kind: ServiceAccount
+          jqPathExpressions:
+            - .imagePullSecrets[]|select(.name | contains("-dockercfg-"))
       overrides:
         - name: app.oidc.enabled
           value: true
@@ -458,26 +463,26 @@ clusterGroup:
           value: quay-user-password
     # Secure Supply Chain - Uncomment to enable
     supply-chain:
-     name: supply-chain
-     project: hub
-     path: charts/supply-chain
-     ignoreDifferences:
-       - group: ""
-         kind: ServiceAccount
-         jqPathExpressions:
-           - .imagePullSecrets[]|select(.name | contains("-dockercfg-"))
-     overrides:
-       # Don't forget to uncomment the RHTAS and RHTPA components in this same file
-       - name: rhtas.enabled
-         value: true
-       - name: rhtpa.enabled
-         value: true
-       - name: registry.tlsVerify
-         value: "false"
-       - name: registry.user
-         value: quay-admin
-       - name: registry.passwordVaultKey
-         value: quay-admin-password
+      name: supply-chain
+      project: hub
+      path: charts/supply-chain
+      ignoreDifferences:
+        - group: ""
+          kind: ServiceAccount
+          jqPathExpressions:
+            - .imagePullSecrets[]|select(.name | contains("-dockercfg-"))
+      overrides:
+        # Don't forget to uncomment the RHTAS and RHTPA components in this same file
+        - name: rhtas.enabled
+          value: true
+        - name: rhtpa.enabled
+          value: true
+        - name: registry.tlsVerify
+          value: "false"
+        - name: registry.user
+          value: quay-admin
+        - name: registry.passwordVaultKey
+          value: quay-admin-password
   argoCD:
     resourceHealthChecks:
       - check: |
