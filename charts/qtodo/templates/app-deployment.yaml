@@ -88,7 +88,7 @@ spec:
             mountPath: /etc/pki/ca-trust/extracted/pem
             readOnly: true
       - name: init-spiffe-helper
-        image: {{ template "qtodo.image" .Values.app.images.spiffeHelper }}
+        image: {{ template "qtodo.image" (dict "value" .Values.app.images.spiffeHelper "context" $) }}
         imagePullPolicy: {{ .Values.app.images.spiffeHelper.pullPolicy }}
         args:
           - '-config'
@@ -105,7 +105,7 @@ spec:
           - name: svids
             mountPath: /svids
       - name: init-spiffe-vault-client
-        image: {{ template "qtodo.image" .Values.app.images.spiffeVaultClient }}
+        image: {{ template "qtodo.image" (dict "value" .Values.app.images.spiffeVaultClient "context" $) }}
         imagePullPolicy: {{ .Values.app.images.spiffeVaultClient.pullPolicy }}
         command:
           - python3
@@ -140,7 +140,7 @@ spec:
       containers:
 {{- if and .Values.app.spire.enabled .Values.app.spire.sidecars }}
       - name: spiffe-helper
-        image: {{ template "qtodo.image" .Values.app.images.spiffeHelper }}
+        image: {{ template "qtodo.image" (dict "value" .Values.app.images.spiffeHelper "context" $) }}
         imagePullPolicy: {{ .Values.app.images.spiffeHelper.pullPolicy }}
         args:
           - '-config'
@@ -157,7 +157,7 @@ spec:
           - name: svids
             mountPath: /svids
       - name: spiffe-vault-client
-        image: {{ template "qtodo.image" .Values.app.images.spiffeVaultClient }}
+        image: {{ template "qtodo.image" (dict "value" .Values.app.images.spiffeVaultClient "context" $) }}
         imagePullPolicy: {{ .Values.app.images.spiffeVaultClient.pullPolicy }}
         command:
         - python3
@@ -193,7 +193,7 @@ spec:
           readOnly: true
 {{- end }}
       - name: qtodo
-        image: {{ template "qtodo.image" .Values.app.images.main }}
+        image: {{ template "qtodo.image" (dict "value" .Values.app.images.main "context" $) }}
         imagePullPolicy: {{ .Values.app.images.main.pullPolicy }}
         ports:
         - containerPort: 8080

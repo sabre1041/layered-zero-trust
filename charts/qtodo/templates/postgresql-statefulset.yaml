@@ -25,7 +25,7 @@ spec:
     spec:
       containers:
       - name: postgres
-        image: {{ template "qtodo.image" .Values.app.images.postgresql }}
+        image: {{ template "qtodo.image" (dict "value" .Values.app.images.postgresql "context" $) }}
         imagePullPolicy: IfNotPresent
         env:
         - name: POSTGRESQL_DATABASE
