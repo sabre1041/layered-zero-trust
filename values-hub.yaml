@@ -393,6 +393,11 @@ clusterGroup:
       namespace: qtodo
       project: hub
       path: charts/qtodo
+      ignoreDifferences:
+        - group: ""
+          kind: ServiceAccount
+          jqPathExpressions:
+            - .imagePullSecrets[]|select(.name | contains("-dockercfg-"))
       overrides:
         - name: app.oidc.enabled
           value: true
