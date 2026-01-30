@@ -65,7 +65,7 @@ clusterGroup:
         annotations:
           openshift.io/cluster-monitoring: "true"
     # Secure Supply Chain: Uncomment to enable OpenShift Pipelines
-    # - openshift-pipelines
+    - openshift-pipelines
   subscriptions:
     acm:
       name: advanced-cluster-management
