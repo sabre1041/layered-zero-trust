@@ -415,6 +415,9 @@ clusterGroup:
       namespace: keycloak-system
       project: hub
       path: charts/keycloak
+      overrides:
+        - name: keycloak.spiffeIdentityProvider.enabled
+          value: "true"
     rh-cert-manager:
       name: rh-cert-manager
       namespace: cert-manager-operator
@@ -434,8 +437,7 @@ clusterGroup:
       project: hub
       path: charts/qtodo
       ignoreDifferences:
-        - group: ""
-          kind: ServiceAccount
+        - kind: ServiceAccount
           jqPathExpressions:
             - .imagePullSecrets[]|select(.name | contains("-dockercfg-"))
       overrides:
@@ -467,8 +469,7 @@ clusterGroup:
     #  project: hub
     #  path: charts/supply-chain
     #  ignoreDifferences:
-    #    - group: ""
-    #      kind: ServiceAccount
+    #    - kind: ServiceAccount
     #      jqPathExpressions:
     #        - .imagePullSecrets[]|select(.name | contains("-dockercfg-"))
     #  overrides:

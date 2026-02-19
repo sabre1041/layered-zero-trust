@@ -7,18 +7,32 @@ Merge realms
 {{- $realms = append $realms .Values.keycloak.defaultRealm }}
 {{- end }}
 {{- range $realms }}
+{{- $realm := deepCopy . }}
+{{- if $.Values.keycloak.spiffeIdentityProvider.enabled }}
+{{- $spiffeConfig := deepCopy $.Values.keycloak.spiffeIdentityProvider.config }}
+{{- $spiffeOidcBase := printf "https://spire-spiffe-oidc-discovery-provider.%s" $.Values.global.localClusterDomain }}
+{{- $_ := set $spiffeConfig.config "issuer" $spiffeOidcBase }}
+{{- $_ := set $spiffeConfig.config "authorizationUrl" (printf "%s/authorize" $spiffeOidcBase) }}
+{{- $_ := set $spiffeConfig.config "tokenUrl" (printf "%s/token" $spiffeOidcBase) }}
+{{- $existingIdps := default list $realm.identityProviders }}
+{{- $_ := set $realm "identityProviders" (append $existingIdps $spiffeConfig) }}
+{{- if $.Values.keycloak.spiffeIdentityProvider.mappers }}
+{{- $existingMappers := default list $realm.identityProviderMappers }}
+{{- $_ := set $realm "identityProviderMappers" (concat $existingMappers $.Values.keycloak.spiffeIdentityProvider.mappers) }}
+{{- end }}
+{{- end }}
 ---
 apiVersion: k8s.keycloak.org/v2alpha1
 kind: KeycloakRealmImport
 metadata:
-  name: "{{ .realm }}-realm-import"
+  name: "{{ $realm.realm }}-realm-import"
   namespace: "{{ $.Release.Namespace }}"
   annotations:
     argocd.argoproj.io/sync-wave: "10"
 spec:
   keycloakCRName: keycloak
   realm:
-{{- toYaml . | nindent 4 }}
+{{- toYaml $realm | nindent 4 }}
   placeholders:
     QTODO_ADMIN_PASSWORD:
       secret:
