@@ -69,9 +69,9 @@ clusterGroup:
     #
     # Red Hat Advanced Cluster Security (RHACS/StackRox) - Uncomment to enable
     - name: stackrox
-        operatorGroup: true
-        labels:
-          openshift.io/cluster-monitoring: "true"
+      operatorGroup: true
+      labels:
+        openshift.io/cluster-monitoring: "true"
   subscriptions:
     acm:
       name: advanced-cluster-management
