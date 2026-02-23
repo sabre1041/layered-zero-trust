@@ -66,6 +66,12 @@ clusterGroup:
           openshift.io/cluster-monitoring: "true"
     # Secure Supply Chain: Uncomment to enable OpenShift Pipelines
     # - openshift-pipelines
+    #
+    # Red Hat Advanced Cluster Security (RHACS/StackRox) - Uncomment to enable
+    - name: stackrox
+        operatorGroup: true
+        labels:
+          openshift.io/cluster-monitoring: "true"
   subscriptions:
     acm:
       name: advanced-cluster-management
@@ -99,6 +105,15 @@ clusterGroup:
       config:
         nodeSelector:
           node-role.kubernetes.io/worker: ""
+    #
+    # ACS Operator Subscription (Uncomment to enable)
+    rhacs-operator:
+      name: rhacs-operator
+      namespace: openshift-operators
+      channel: stable
+      source: redhat-operators
+      csv: rhacs-operator.v4.9.0
+    #
     # Storage and Registry operator subscriptions
     # Required for RHTPA and QUAY (provides NooBaa object storage backend)
     # ODF provides object storage backend (NooBaa) for RHTPA and optionally Quay
@@ -483,6 +498,57 @@ clusterGroup:
     #      value: quay-admin
     #    - name: registry.passwordVaultKey
     #      value: quay-admin-password
+    #
+    # ACS Central Services (Uncomment to enable)
+    acs-central:
+      name: acs-central-services
+      namespace: stackrox
+      project: hub
+      path: charts/acs-central
+      syncPolicy:
+        syncOptions:
+          - CreateNamespace=true
+      overrides:
+        - name: central.persistence.storageClass
+          value: gp3-csi
+        - name: central.exposure.route.enabled
+          value: "true"
+        - name: integration.keycloak.enabled
+          value: "true"
+        - name: integration.keycloak.realm
+          value: "zero-trust"
+        - name: integration.keycloak.clientId
+          value: "acs-central"
+    # ACS to scan images stored in Quay (Uncomment to enable)
+    #    - name: integration.quay.enabled
+    #      value: "true"
+    #    - name: integration.quay.url
+    #      value: "quay-quay-enterprise.apps.{{ .Values.global.domain }}"
+      extraValueFiles:
+        - /values-global.yaml
+        - /values-{{ .Values.global.pattern }}-hub.yaml
+      ignoreDifferences:
+        - group: platform.stackrox.io
+          kind: Central
+          jsonPointers:
+            - /spec/scanner/scannerComponent
+      annotations:
+        argocd.argoproj.io/sync-wave: "10"
+
+    # ACS Secured Cluster (Uncomment to enable)
+    acs-secured-cluster:
+      name: acs-secured-cluster
+      namespace: stackrox
+      project: hub
+      path: charts/acs-secured-cluster
+      overrides:
+        - name: clusterName
+          value: "{{ .Values.clusterGroup.name }}"
+      extraValueFiles:
+        - /values-global.yaml
+        - /values-{{ .Values.global.pattern }}-hub.yaml
+      annotations:
+        argocd.argoproj.io/sync-wave: "15"
   argoCD:
     resourceHealthChecks:
       - check: |

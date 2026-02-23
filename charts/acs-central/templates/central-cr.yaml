@@ -1,0 +1,68 @@
+{{- if .Values.central.enabled }}
+apiVersion: platform.stackrox.io/v1alpha1
+kind: Central
+metadata:
+  name: stackrox-central-services
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "acs-central.labels" . | nindent 4 }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "10"
+spec:
+  central:
+    exposure:
+      {{- if .Values.central.exposure.loadBalancer.enabled }}
+      loadBalancer:
+        enabled: true
+        port: 443
+      {{- end }}
+      {{- if .Values.central.exposure.route.enabled }}
+      route:
+        enabled: true
+      {{- end }}
+
+    {{- if .Values.central.persistence.enabled }}
+    db:
+      isEnabled: Default
+      persistence:
+        persistentVolumeClaim:
+          claimName: central-db
+          {{- if .Values.central.persistence.storageClass }}
+          storageClassName: {{ .Values.central.persistence.storageClass }}
+          {{- end }}
+          size: {{ .Values.central.persistence.size }}
+    {{- end }}
+
+    resources:
+      {{- toYaml .Values.central.resources | nindent 6 }}
+
+    {{- if .Values.integration.vault.enabled }}
+    defaultTLSSecret:
+      name: central-tls
+    {{- end }}
+
+  {{- if .Values.scanner.enabled }}
+  scanner:
+    analyzer:
+      scaling:
+        autoScaling: Enabled
+        replicas: {{ .Values.scanner.scannerV4.indexer.replicas }}
+        minReplicas: {{ .Values.scanner.scannerV4.indexer.autoscaling.minReplicas }}
+        maxReplicas: {{ .Values.scanner.scannerV4.indexer.autoscaling.maxReplicas }}
+
+    {{- if .Values.scanner.scannerV4.enabled }}
+    scannerComponent: AutoSense
+    {{- end }}
+  {{- end }}
+
+  {{- if .Values.integration.keycloak.enabled }}
+  auth:
+    provider: oidc
+  {{- end }}
+
+  monitoring:
+    {{- if .Values.central.monitoring.openshift.enabled }}
+    openshift:
+      enabled: true
+    {{- end }}
+{{- end }}
