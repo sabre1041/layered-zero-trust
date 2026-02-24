@@ -525,9 +525,9 @@ clusterGroup:
     #      value: "true"
     #    - name: integration.quay.url
     #      value: "quay-quay-enterprise.apps.{{ .Values.global.domain }}"
-    #  extraValueFiles:
-    #    - /values-global.yaml
-    #    - /values-{{ .Values.global.pattern }}-hub.yaml
+      extraValueFiles:
+        - /values-global.yaml
+        - /values-{{ .Values.global.pattern }}-hub.yaml
       ignoreDifferences:
         - group: platform.stackrox.io
           kind: Central
@@ -545,9 +545,9 @@ clusterGroup:
       overrides:
         - name: clusterName
           value: "{{ .Values.clusterGroup.name }}"
-    #  extraValueFiles:
-    #    - /values-global.yaml
-    #    - /values-{{ .Values.global.pattern }}-hub.yaml
+      extraValueFiles:
+        - /values-global.yaml
+        - /values-{{ .Values.global.pattern }}-hub.yaml
       annotations:
         argocd.argoproj.io/sync-wave: "15"
   argoCD:
