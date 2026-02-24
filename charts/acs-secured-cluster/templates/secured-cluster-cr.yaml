@@ -7,6 +7,7 @@ metadata:
     {{- include "acs-secured-cluster.labels" . | nindent 4 }}
   annotations:
     argocd.argoproj.io/sync-wave: "15"
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
 spec:
   clusterName: {{ .Values.clusterName | default .Values.global.clusterName | quote }}
 
@@ -38,12 +39,6 @@ spec:
 
   auditLogs:
     collection: Auto
-
-  {{- if .Values.scanner.enabled }}
-  perNode:
-    scanner:
-      scannerComponent: Enabled
-  {{- end }}
 
   {{- if .Values.monitoring.enabled }}
   monitoring:

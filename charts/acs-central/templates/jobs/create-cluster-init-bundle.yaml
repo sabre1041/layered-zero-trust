@@ -1,3 +1,9 @@
+# NOTE: This init bundle is for the local cluster (hub) only.
+# For multi-cluster deployments, create separate init bundle jobs
+# for each remote secured cluster with their specific cluster names.
+# export DATA='{"name":"{{ .Values.clusterName | default .Values.global.clusterName | replace "_" "-" | replace "." "-" }}"}'
+#
+
 {{- if .Values.central.enabled }}
 apiVersion: batch/v1
 kind: Job
