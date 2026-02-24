@@ -10,22 +10,16 @@ Merge realms
 {{- $realm := deepCopy . }}
 {{- if $.Values.keycloak.spiffeIdentityProvider.enabled }}
 {{- $spiffeConfig := deepCopy $.Values.keycloak.spiffeIdentityProvider.config }}
-{{- $spiffeOidcBase := printf "https://spire-spiffe-oidc-discovery-provider.%s" $.Values.global.localClusterDomain }}
-{{- if not (hasKey $spiffeConfig.config "issuer") }}
-{{- $_ := set $spiffeConfig.config "issuer" $spiffeOidcBase }}
+{{- $localDomain := $.Values.global.localClusterDomain }}
+{{- $defaultIssuer := printf "spiffe://%s" $localDomain }}
+{{- $defaultJwksUrl := printf "https://spire-spiffe-oidc-discovery-provider.%s/keys" $localDomain }}
+{{- if or (not (hasKey $spiffeConfig.config "issuer")) (eq (index $spiffeConfig.config "issuer") "") }}
+{{- $_ := set $spiffeConfig.config "issuer" $defaultIssuer }}
 {{- end }}
-{{- if not (hasKey $spiffeConfig.config "authorizationUrl") }}
-{{- $_ := set $spiffeConfig.config "authorizationUrl" (printf "%s/authorize" $spiffeOidcBase) }}
-{{- end }}
-{{- if not (hasKey $spiffeConfig.config "tokenUrl") }}
-{{- $_ := set $spiffeConfig.config "tokenUrl" (printf "%s/token" $spiffeOidcBase) }}
-{{- end }}
+{{- $_ := set $spiffeConfig.config "bundleEndpoint" ($spiffeConfig.config.jwksUrl | default $defaultJwksUrl) }}
+{{- $_ := unset $spiffeConfig.config "jwksUrl" }}
 {{- $existingIdps := default list $realm.identityProviders }}
 {{- $_ := set $realm "identityProviders" (append $existingIdps $spiffeConfig) }}
-{{- if $.Values.keycloak.spiffeIdentityProvider.mappers }}
-{{- $existingMappers := default list $realm.identityProviderMappers }}
-{{- $_ := set $realm "identityProviderMappers" (concat $existingMappers $.Values.keycloak.spiffeIdentityProvider.mappers) }}
-{{- end }}
 {{- end }}
 ---
 apiVersion: k8s.keycloak.org/v2alpha1

@@ -84,7 +84,7 @@ clusterGroup:
     rhbk:
       name: rhbk-operator
       namespace: keycloak-system
-      channel: stable-v26.2
+      channel: stable-v26.4
       catalogSource: redhat-marketplace
     zero-trust-workload-identity-manager:
       name: openshift-zero-trust-workload-identity-manager
@@ -415,16 +415,13 @@ clusterGroup:
       namespace: keycloak-system
       project: hub
       path: charts/keycloak
-      overrides:
-        - name: keycloak.spiffeIdentityProvider.enabled
-          value: "true"
-        # Custom SPIFFE OIDC discovery URLs (auto-generated from cluster domain by default)
+      # SPIFFE Identity Provider is enabled by default in the chart.
+      # Override issuer/jwksUrl only if auto-generated values from cluster domain are not suitable.
+      # overrides:
         # - name: keycloak.spiffeIdentityProvider.config.config.issuer
-        #   value: "https://spire-spiffe-oidc-discovery-provider.apps.example.com"
-        # - name: keycloak.spiffeIdentityProvider.config.config.authorizationUrl
-        #   value: "https://spire-spiffe-oidc-discovery-provider.apps.example.com/authorize"
-        # - name: keycloak.spiffeIdentityProvider.config.config.tokenUrl
-        #   value: "https://spire-spiffe-oidc-discovery-provider.apps.example.com/token"
+        #   value: "spiffe://apps.example.com"
+        # - name: keycloak.spiffeIdentityProvider.config.config.jwksUrl
+        #   value: "https://spire-spiffe-oidc-discovery-provider.apps.example.com/keys"
     rh-cert-manager:
       name: rh-cert-manager
       namespace: cert-manager-operator
