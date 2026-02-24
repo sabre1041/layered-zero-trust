@@ -141,7 +141,7 @@ integration:
 
   # Keycloak SSO integration
   keycloak:
-    enabled: true
+    enabled: false
     realm: zero-trust
     clientId: acs-central
     clientSecret:

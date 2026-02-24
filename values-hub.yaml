@@ -109,13 +109,10 @@ clusterGroup:
     # ACS Operator Subscription (Uncomment to enable)
     rhacs-operator:
       name: rhacs-operator
-      namespace: rhacs-operator
+      namespace: openshift-operators
       channel: stable
       source: redhat-operators
       csv: rhacs-operator.v4.9.0
-      config:
-        nodeSelector:
-          node-role.kubernetes.io/infra: ""
     #
     # Storage and Registry operator subscriptions
     # Required for RHTPA and QUAY (provides NooBaa object storage backend)
@@ -528,9 +525,9 @@ clusterGroup:
     #      value: "true"
     #    - name: integration.quay.url
     #      value: "quay-quay-enterprise.apps.{{ .Values.global.domain }}"
-      extraValueFiles:
-        - /values-global.yaml
-        - /values-{{ .Values.global.pattern }}-hub.yaml
+    #  extraValueFiles:
+    #    - /values-global.yaml
+    #    - /values-{{ .Values.global.pattern }}-hub.yaml
       ignoreDifferences:
         - group: platform.stackrox.io
           kind: Central
@@ -543,14 +540,14 @@ clusterGroup:
     acs-secured-cluster:
       name: acs-secured-cluster
       namespace: stackrox
-      project: hub
+      project: stackrox
       path: charts/acs-secured-cluster
       overrides:
         - name: clusterName
           value: "{{ .Values.clusterGroup.name }}"
-      extraValueFiles:
-        - /values-global.yaml
-        - /values-{{ .Values.global.pattern }}-hub.yaml
+    #  extraValueFiles:
+    #    - /values-global.yaml
+    #    - /values-{{ .Values.global.pattern }}-hub.yaml
       annotations:
         argocd.argoproj.io/sync-wave: "15"
   argoCD:
