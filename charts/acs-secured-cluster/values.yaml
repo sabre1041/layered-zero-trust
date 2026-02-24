@@ -57,7 +57,8 @@ collector:
   enabled: true
 
   # Collection method
-  collectionMethod: CORE_BPF
+  #collectionMethod: CORE_BPF
+  collectionMethod: EBPF  # Use EBPF instead of KernelModule
 
   # Image flavor
   imageFlavor: Regular

@@ -10,16 +10,16 @@ metadata:
 spec:
   clusterName: {{ .Values.clusterName | default .Values.global.clusterName | quote }}
 
-  centralEndpoint: {{ .Values.centralEndpoint | quote }}
+  centralEndpoint: central-stackrox.{{ .Values.global.localClusterDomain }}:443
 
   {{- if .Values.admissionControl.enabled }}
   admissionControl:
     listenOnCreates: {{ .Values.admissionControl.listenOnCreates }}
     listenOnUpdates: {{ .Values.admissionControl.listenOnUpdates }}
     listenOnEvents: {{ .Values.admissionControl.listenOnEvents }}
+    bypass: BreakGlassAnnotation
+    contactImageScanners: DoNotScanInline
     timeoutSeconds: {{ .Values.admissionControl.timeoutSeconds }}
-    bypass: {{ .Values.admissionControl.bypass.enabled }}
-    contactImageScanners: Enabled
   {{- end }}
 
   {{- if .Values.sensor.enabled }}
@@ -29,16 +29,15 @@ spec:
   {{- end }}
 
   {{- if .Values.collector.enabled }}
-  collector:
-    collectionMethod: {{ .Values.collector.collectionMethod }}
-    imageFlavor: {{ .Values.collector.imageFlavor }}
-    resources:
-      {{- toYaml .Values.collector.resources | nindent 6 }}
-    {{- if .Values.tolerations }}
-    tolerations:
-      {{- toYaml .Values.tolerations | nindent 6 }}
-    {{- end }}
+  perNode:
+    collector:
+      collection: {{ .Values.collector.collectionMethod }}
+      imageFlavor: {{ .Values.collector.imageFlavor }}
+    taintToleration: TolerateTaints
   {{- end }}
+
+  auditLogs:
+    collection: Auto
 
   {{- if .Values.scanner.enabled }}
   perNode:

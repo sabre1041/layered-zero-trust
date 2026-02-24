@@ -22,24 +22,20 @@ spec:
       {{- end }}
 
     {{- if .Values.central.persistence.enabled }}
-    db:
-      isEnabled: Default
-      persistence:
-        persistentVolumeClaim:
-          claimName: central-db
-          {{- if .Values.central.persistence.storageClass }}
-          storageClassName: {{ .Values.central.persistence.storageClass }}
-          {{- end }}
-          size: {{ .Values.central.persistence.size }}
+    persistence:
+      persistentVolumeClaim:
+        claimName: stackrox-db
+        {{- if .Values.central.persistence.storageClass }}
+        storageClassName: {{ .Values.central.persistence.storageClass }}
+        {{- end }}
+        size: {{ .Values.central.persistence.size }}
     {{- end }}
 
     resources:
       {{- toYaml .Values.central.resources | nindent 6 }}
 
-    {{- if .Values.integration.vault.enabled }}
-    defaultTLSSecret:
-      name: central-tls
-    {{- end }}
+  egress:
+    connectivityPolicy: Online
 
   {{- if .Values.scanner.enabled }}
   scanner:
@@ -49,15 +45,7 @@ spec:
         replicas: {{ .Values.scanner.scannerV4.indexer.replicas }}
         minReplicas: {{ .Values.scanner.scannerV4.indexer.autoscaling.minReplicas }}
         maxReplicas: {{ .Values.scanner.scannerV4.indexer.autoscaling.maxReplicas }}
-
-    {{- if .Values.scanner.scannerV4.enabled }}
-    scannerComponent: AutoSense
-    {{- end }}
-  {{- end }}
-
-  {{- if .Values.integration.keycloak.enabled }}
-  auth:
-    provider: oidc
+    scannerComponent: Enabled
   {{- end }}
 
   monitoring:

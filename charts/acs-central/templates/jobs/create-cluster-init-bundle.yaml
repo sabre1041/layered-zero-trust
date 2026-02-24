@@ -1,0 +1,98 @@
+{{- if .Values.central.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: create-cluster-init-bundle
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "acs-central.labels" . | nindent 4 }}
+  annotations:
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+    argocd.argoproj.io/sync-wave: "12"
+spec:
+  template:
+    metadata:
+      name: create-cluster-init-bundle
+    spec:
+      containers:
+        - image: image-registry.openshift-image-registry.svc:5000/openshift/cli:latest
+          env:
+            - name: PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.central.adminPassword.secretName }}
+                  key: {{ .Values.central.adminPassword.secretKey }}
+          command:
+            - /bin/bash
+            - -c
+            - |
+              #!/usr/bin/env bash
+
+              # Check if init bundle already exists
+              if kubectl get secret/sensor-tls &> /dev/null; then
+                echo "✅ Cluster init bundle already configured, skipping"
+                exit 0
+              fi
+
+              echo "🔄 Waiting for ACS Central to be ready..."
+              attempt_counter=0
+              max_attempts=30
+
+              until $(curl -k --output /dev/null --silent --head --fail https://central); do
+                  if [ ${attempt_counter} -eq ${max_attempts} ]; then
+                    echo "❌ Max attempts reached waiting for Central"
+                    exit 1
+                  fi
+
+                  printf '.'
+                  attempt_counter=$(($attempt_counter+1))
+                  sleep 10
+              done
+
+              echo ""
+              echo "✅ Central is ready"
+              echo "🔄 Generating cluster init bundle..."
+
+              # Generate init bundle via API
+              export DATA='{"name":"{{ .Values.clusterName | default .Values.global.clusterName }}"}'
+
+              curl -k -o /tmp/bundle.json -X POST \
+                -u "admin:$PASSWORD" \
+                -H "Content-Type: application/json" \
+                --data "$DATA" \
+                https://central/v1/cluster-init/init-bundles
+
+              if [ $? -ne 0 ]; then
+                echo "❌ Failed to generate init bundle"
+                cat /tmp/bundle.json
+                exit 1
+              fi
+
+              echo "✅ Bundle received"
+
+              # Extract and apply bundle
+              echo "🔄 Applying init bundle secrets..."
+              cat /tmp/bundle.json | python3 -c "import sys, json; print(json.load(sys.stdin)['kubectlBundle'])" | base64 -d | oc apply -f -
+
+              if [ $? -eq 0 ]; then
+                echo "✅ Init bundle secrets applied successfully"
+
+                # Label SecuredCluster to trigger reconciliation
+                if oc get SecuredCluster stackrox-secured-cluster-services &> /dev/null; then
+                  oc label SecuredCluster stackrox-secured-cluster-services cluster-init-job-status=created --overwrite
+                  echo "✅ SecuredCluster labeled for reconciliation"
+                fi
+              else
+                echo "❌ Failed to apply init bundle"
+                exit 1
+              fi
+
+              echo "🎉 ACS cluster init bundle configuration complete"
+          imagePullPolicy: Always
+          name: create-cluster-init-bundle
+      dnsPolicy: ClusterFirst
+      restartPolicy: Never
+      serviceAccount: create-cluster-init
+      serviceAccountName: create-cluster-init
+      terminationGracePeriodSeconds: 30
+{{- end }}

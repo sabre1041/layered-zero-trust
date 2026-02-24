@@ -1,0 +1,81 @@
+{{- if and .Values.central.enabled .Values.integration.keycloak.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: create-auth-provider
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "acs-central.labels" . | nindent 4 }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "13"
+spec:
+  template:
+    metadata:
+      name: create-auth-provider
+    spec:
+      containers:
+        - image: image-registry.openshift-image-registry.svc:5000/openshift/cli:latest
+          env:
+            - name: PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.central.adminPassword.secretName }}
+                  key: {{ .Values.central.adminPassword.secretKey }}
+          command:
+            - /bin/bash
+            - -c
+            - |
+              #!/usr/bin/env bash
+
+              echo "🔄 Configuring OpenShift OAuth authentication provider..."
+
+              # Check if auth provider already exists
+              AUTH_PROVIDERS=$(curl -sk -u "admin:$PASSWORD" https://central/v1/authProviders)
+              if echo "$AUTH_PROVIDERS" | grep -q "OpenShift OAuth"; then
+                echo "✅ OpenShift OAuth provider already configured"
+                exit 0
+              fi
+
+              # Create OpenShift OAuth provider
+              curl -X POST -u "admin:$PASSWORD" -k https://central/v1/authProviders \
+                --data '{"name": "OpenShift OAuth", "type": "openshift", "enabled": true}' \
+                > /tmp/output.json
+
+              if [ $? -ne 0 ]; then
+                echo "❌ Failed to create auth provider"
+                cat /tmp/output.json
+                exit 1
+              fi
+
+              # Extract provider ID
+              AUTH_PROVIDER_ID=$(sed 's/,/\n/g' /tmp/output.json | grep -w id | awk -F\" '{ print $4 }')
+
+              if [ -z "$AUTH_PROVIDER_ID" ]; then
+                echo "❌ Failed to extract auth provider ID"
+                cat /tmp/output.json
+                exit 1
+              fi
+
+              echo "✅ Auth provider created with ID: $AUTH_PROVIDER_ID"
+
+              # Create admin group mapping
+              JSON_PAYLOAD="{\"roleName\":\"Admin\",\"props\":{\"authProviderId\":\"$AUTH_PROVIDER_ID\",\"key\":\"name\",\"value\":\"kube:admin\"}}"
+
+              curl -X POST -u "admin:$PASSWORD" -k https://central/v1/groups \
+                -s --data "$JSON_PAYLOAD"
+
+              if [ $? -eq 0 ]; then
+                echo "✅ Admin group mapping created for kube:admin"
+              else
+                echo "⚠️  Warning: Failed to create admin group mapping (may already exist)"
+              fi
+
+              echo "🎉 OpenShift OAuth configuration complete"
+          imagePullPolicy: Always
+          name: create-auth-provider
+      dnsPolicy: ClusterFirst
+      restartPolicy: Never
+      serviceAccount: create-cluster-init
+      serviceAccountName: create-cluster-init
+      terminationGracePeriodSeconds: 30
+{{- end }}

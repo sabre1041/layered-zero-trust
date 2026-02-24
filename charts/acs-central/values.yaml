@@ -1,11 +1,13 @@
 # Default values for ACS Central Services
 # This chart deploys the Central and Scanner components
+#
+# Cluster name for init bundle
+clusterName: ""  # Will be set from global.clusterName
 
 global:
   pattern: layered-zero-trust
   clusterDomain: cluster.local
   targetRevision: main
-
 central:
   # Enable/disable Central deployment
   enabled: true
