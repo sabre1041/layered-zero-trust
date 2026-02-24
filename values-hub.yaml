@@ -418,6 +418,13 @@ clusterGroup:
       overrides:
         - name: keycloak.spiffeIdentityProvider.enabled
           value: "true"
+        # Custom SPIFFE OIDC discovery URLs (auto-generated from cluster domain by default)
+        # - name: keycloak.spiffeIdentityProvider.config.config.issuer
+        #   value: "https://spire-spiffe-oidc-discovery-provider.apps.example.com"
+        # - name: keycloak.spiffeIdentityProvider.config.config.authorizationUrl
+        #   value: "https://spire-spiffe-oidc-discovery-provider.apps.example.com/authorize"
+        # - name: keycloak.spiffeIdentityProvider.config.config.tokenUrl
+        #   value: "https://spire-spiffe-oidc-discovery-provider.apps.example.com/token"
     rh-cert-manager:
       name: rh-cert-manager
       namespace: cert-manager-operator

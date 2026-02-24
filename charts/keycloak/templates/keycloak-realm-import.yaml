@@ -11,9 +11,15 @@ Merge realms
 {{- if $.Values.keycloak.spiffeIdentityProvider.enabled }}
 {{- $spiffeConfig := deepCopy $.Values.keycloak.spiffeIdentityProvider.config }}
 {{- $spiffeOidcBase := printf "https://spire-spiffe-oidc-discovery-provider.%s" $.Values.global.localClusterDomain }}
+{{- if not (hasKey $spiffeConfig.config "issuer") }}
 {{- $_ := set $spiffeConfig.config "issuer" $spiffeOidcBase }}
+{{- end }}
+{{- if not (hasKey $spiffeConfig.config "authorizationUrl") }}
 {{- $_ := set $spiffeConfig.config "authorizationUrl" (printf "%s/authorize" $spiffeOidcBase) }}
+{{- end }}
+{{- if not (hasKey $spiffeConfig.config "tokenUrl") }}
 {{- $_ := set $spiffeConfig.config "tokenUrl" (printf "%s/token" $spiffeOidcBase) }}
+{{- end }}
 {{- $existingIdps := default list $realm.identityProviders }}
 {{- $_ := set $realm "identityProviders" (append $existingIdps $spiffeConfig) }}
 {{- if $.Values.keycloak.spiffeIdentityProvider.mappers }}
