@@ -112,7 +112,7 @@ clusterGroup:
       namespace: openshift-operators
       channel: stable
       source: redhat-operators
-      csv: rhacs-operator.v4.9.0
+    #  csv: rhacs-operator.v4.9.0
     #
     # Storage and Registry operator subscriptions
     # Required for RHTPA and QUAY (provides NooBaa object storage backend)
