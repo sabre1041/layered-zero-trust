@@ -109,10 +109,13 @@ clusterGroup:
     # ACS Operator Subscription (Uncomment to enable)
     rhacs-operator:
       name: rhacs-operator
-      namespace: openshift-operators
+      namespace: rhacs-operator
       channel: stable
       source: redhat-operators
       csv: rhacs-operator.v4.9.0
+      config:
+        nodeSelector:
+          node-role.kubernetes.io/infra: ""
     #
     # Storage and Registry operator subscriptions
     # Required for RHTPA and QUAY (provides NooBaa object storage backend)
@@ -150,6 +153,7 @@ clusterGroup:
     #     argocd.argoproj.io/sync-wave: "-4"  # Install after OperatorGroup (-5), before applications
   projects:
     - hub
+    - stackrox # ACS Central CR (Uncomment to enable)
   # Explicitly mention the cluster-state based overrides we plan to use for this pattern.
   # We can use self-referential variables because the chart calls the tpl function with these variables defined
   sharedValueFiles:
@@ -503,7 +507,7 @@ clusterGroup:
     acs-central:
       name: acs-central-services
       namespace: stackrox
-      project: hub
+      project: stackrox
       path: charts/acs-central
       syncPolicy:
         syncOptions:
