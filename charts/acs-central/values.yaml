@@ -8,6 +8,9 @@ global:
   pattern: layered-zero-trust
   clusterDomain: cluster.local
   targetRevision: main
+  secretStore:
+    name: vault-backend
+    kind: ClusterSecretStore
 central:
   # Enable/disable Central deployment
   enabled: true
