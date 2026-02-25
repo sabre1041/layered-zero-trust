@@ -541,7 +541,7 @@ clusterGroup:
       path: charts/acs-secured-cluster
       overrides:
         - name: clusterName
-          value: "{{ .Values.clusterGroup.name }}"
+          value: {{ .Values.clusterGroup.name }}
       extraValueFiles:
         - /values-global.yaml
         - /values-{{ .Values.global.pattern }}-hub.yaml
