@@ -150,7 +150,6 @@ clusterGroup:
     #     argocd.argoproj.io/sync-wave: "-4"  # Install after OperatorGroup (-5), before applications
   projects:
     - hub
-    - stackrox # ACS Central CR (Uncomment to enable)
   # Explicitly mention the cluster-state based overrides we plan to use for this pattern.
   # We can use self-referential variables because the chart calls the tpl function with these variables defined
   sharedValueFiles:
@@ -504,7 +503,6 @@ clusterGroup:
     acs-central:
       name: acs-central-services
       namespace: stackrox
-      project: stackrox
       path: charts/acs-central
       syncPolicy:
         syncOptions:
@@ -540,7 +538,6 @@ clusterGroup:
     acs-secured-cluster:
       name: acs-secured-cluster
       namespace: stackrox
-      project: stackrox
       path: charts/acs-secured-cluster
       overrides:
         - name: clusterName
