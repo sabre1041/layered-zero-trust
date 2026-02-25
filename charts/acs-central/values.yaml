@@ -80,11 +80,11 @@ central:
 
 scanner:
   # Enable/disable Scanner deployment
-  enabled: true
+  enabled: false
 
   # Scanner V4 configuration (recommended)
   scannerV4:
-    enabled: true
+    enabled: false
 
     # Indexer component
     indexer:
