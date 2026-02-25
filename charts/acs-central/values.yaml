@@ -30,13 +30,20 @@ central:
     pullPolicy: IfNotPresent
 
   # Resource requirements
+  #resources:
+  #  requests:
+  #    cpu: 1500m
+  #    memory: 4Gi
+  #  limits:
+  #    cpu: 4000m
+  #    memory: 8Gi
   resources:
     requests:
-      cpu: 1500m
-      memory: 4Gi
+      cpu: 500m
+      memory: 2Gi
     limits:
-      cpu: 4000m
-      memory: 8Gi
+      cpu: 2000m
+      memory: 4Gi
 
   # Persistence configuration
   persistence:
@@ -88,7 +95,7 @@ scanner:
 
     # Indexer component
     indexer:
-      replicas: 3
+      replicas: 1 # default 3
       resources:
         requests:
           cpu: 1000m
@@ -100,13 +107,13 @@ scanner:
       # Auto-scaling configuration
       autoscaling:
         enabled: true
-        minReplicas: 2
-        maxReplicas: 5
+        minReplicas: 1 # default 2
+        maxReplicas: 2 # default 5
         targetCPUUtilizationPercentage: 70
 
     # Matcher component
     matcher:
-      replicas: 2
+      replicas: 1 # default 2
       resources:
         requests:
           cpu: 500m
