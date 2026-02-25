@@ -503,6 +503,7 @@ clusterGroup:
     acs-central:
       name: acs-central-services
       namespace: stackrox
+      project: hub
       path: charts/acs-central
       syncPolicy:
         syncOptions:
@@ -538,10 +539,11 @@ clusterGroup:
     acs-secured-cluster:
       name: acs-secured-cluster
       namespace: stackrox
+      project: hub
       path: charts/acs-secured-cluster
       overrides:
         - name: clusterName
-          value: {{ .Values.clusterGroup.name }}
+          value: hub
       extraValueFiles:
         - /values-global.yaml
         - /values-{{ .Values.global.pattern }}-hub.yaml
