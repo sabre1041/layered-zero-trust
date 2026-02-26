@@ -11,6 +11,10 @@ metadata:
     argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
 spec:
   central:
+    # Admin password secret reference (enables htpasswd authentication)
+    adminPasswordSecretRef:
+      name: {{ .Values.central.adminPassword.secretName }}
+
     exposure:
       {{- if .Values.central.exposure.loadBalancer.enabled }}
       loadBalancer:

@@ -513,7 +513,7 @@ clusterGroup:
         - name: integration.keycloak.enabled
           value: "true"
         - name: integration.keycloak.realm
-          value: "zero-trust"
+          value: "ztvp"
         - name: integration.keycloak.clientId
           value: "acs-central"
     # ACS to scan images stored in Quay (Uncomment to enable)
