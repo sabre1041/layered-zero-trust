@@ -69,18 +69,20 @@ spec:
                 https://central/v1/cluster-init/init-bundles > /tmp/bundles_list.json
 
               # Check if bundle with this cluster name already exists
-              EXISTING_BUNDLE_ID=$(python3 -c "
-import sys, json
-try:
-    data = json.load(open('/tmp/bundles_list.json'))
-    items = data.get('items', [])
-    for item in items:
-        if item.get('name') == '$CLUSTER_NAME':
-            print(item.get('id', ''))
-            break
-except:
-    pass
-" 2>/dev/null)
+              printf '%s\n' \
+                'import sys, json' \
+                'try:' \
+                '    data = json.load(open("/tmp/bundles_list.json"))' \
+                '    items = data.get("items", [])' \
+                '    for item in items:' \
+                '        if item.get("name") == sys.argv[1]:' \
+                '            print(item.get("id", ""))' \
+                '            break' \
+                'except:' \
+                '    pass' \
+                > /tmp/find_bundle.py
+
+              EXISTING_BUNDLE_ID=$(python3 /tmp/find_bundle.py "$CLUSTER_NAME" 2>/dev/null)
 
               # If bundle exists, delete it first
               if [ ! -z "$EXISTING_BUNDLE_ID" ]; then
@@ -109,7 +111,7 @@ except:
               fi
 
               # Check if response contains kubectlBundle
-              if ! python3 -c "import sys, json; json.load(open('/tmp/bundle.json'))['kubectlBundle']" &> /dev/null; then
+              if ! python3 -c 'import sys, json; json.load(open("/tmp/bundle.json"))["kubectlBundle"]' &> /dev/null; then
                 echo "❌ API response does not contain kubectlBundle:"
                 cat /tmp/bundle.json | python3 -m json.tool
                 exit 1
@@ -119,7 +121,7 @@ except:
 
               # Extract and apply bundle
               echo "🔄 Applying init bundle secrets..."
-              cat /tmp/bundle.json | python3 -c "import sys, json; print(json.load(sys.stdin)['kubectlBundle'])" | base64 -d | oc apply -f -
+              cat /tmp/bundle.json | python3 -c 'import sys, json; print(json.load(sys.stdin)["kubectlBundle"])' | base64 -d | oc apply -f -
 
               if [ $? -eq 0 ]; then
                 echo "✅ Init bundle secrets applied successfully"
