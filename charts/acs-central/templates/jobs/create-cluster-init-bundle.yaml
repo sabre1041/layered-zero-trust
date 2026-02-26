@@ -60,10 +60,41 @@ spec:
 
               echo ""
               echo "✅ Central is ready"
-              echo "🔄 Generating cluster init bundle..."
 
-              # Generate init bundle via API
-              export DATA='{"name":"{{ .Values.clusterName | default .Values.global.clusterName }}"}'
+              CLUSTER_NAME="{{ .Values.clusterName | default .Values.global.clusterName }}"
+              echo "🔄 Checking for existing init bundles..."
+
+              # List existing init bundles
+              curl -k -s -u "admin:$PASSWORD" \
+                https://central/v1/cluster-init/init-bundles > /tmp/bundles_list.json
+
+              # Check if bundle with this cluster name already exists
+              EXISTING_BUNDLE_ID=$(python3 -c "
+import sys, json
+try:
+    data = json.load(open('/tmp/bundles_list.json'))
+    items = data.get('items', [])
+    for item in items:
+        if item.get('name') == '$CLUSTER_NAME':
+            print(item.get('id', ''))
+            break
+except:
+    pass
+" 2>/dev/null)
+
+              # If bundle exists, delete it first
+              if [ ! -z "$EXISTING_BUNDLE_ID" ]; then
+                echo "⚠️  Init bundle '$CLUSTER_NAME' already exists (ID: $EXISTING_BUNDLE_ID), deleting..."
+                curl -k -X DELETE -u "admin:$PASSWORD" \
+                  "https://central/v1/cluster-init/init-bundles/$EXISTING_BUNDLE_ID" \
+                  -o /tmp/delete_result.json
+                echo "✅ Existing bundle deleted"
+                sleep 2
+              fi
+
+              # Generate new init bundle via API
+              echo "🔄 Generating cluster init bundle..."
+              export DATA="{\"name\":\"$CLUSTER_NAME\"}"
 
               curl -k -o /tmp/bundle.json -X POST \
                 -u "admin:$PASSWORD" \
@@ -74,6 +105,13 @@ spec:
               if [ $? -ne 0 ]; then
                 echo "❌ Failed to generate init bundle"
                 cat /tmp/bundle.json
+                exit 1
+              fi
+
+              # Check if response contains kubectlBundle
+              if ! python3 -c "import sys, json; json.load(open('/tmp/bundle.json'))['kubectlBundle']" &> /dev/null; then
+                echo "❌ API response does not contain kubectlBundle:"
+                cat /tmp/bundle.json | python3 -m json.tool
                 exit 1
               fi
 
