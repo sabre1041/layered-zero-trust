@@ -19,6 +19,9 @@ spec:
   template:
     metadata:
       name: create-cluster-init-bundle
+      labels:
+        app: create-cluster-init-bundle
+        {{- include "acs-central.labels" . | nindent 8 }}
     spec:
       containers:
         - image: image-registry.openshift-image-registry.svc:5000/openshift/cli:latest

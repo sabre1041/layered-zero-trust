@@ -12,7 +12,7 @@ metadata:
 spec:
   central:
     # Admin password secret reference (enables htpasswd authentication)
-    adminPasswordSecretRef:
+    adminPasswordSecret:
       name: {{ .Values.central.adminPassword.secretName }}
 
     exposure:
