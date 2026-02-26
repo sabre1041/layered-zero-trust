@@ -505,9 +505,6 @@ clusterGroup:
       namespace: stackrox
       project: hub
       path: charts/acs-central
-      syncPolicy:
-        syncOptions:
-          - CreateNamespace=true
       overrides:
         - name: central.persistence.storageClass
           value: gp3-csi
