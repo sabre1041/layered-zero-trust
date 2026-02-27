@@ -2,7 +2,7 @@
 # This chart deploys the Central and Scanner components
 #
 # Cluster name for init bundle
-clusterName: ""  # Will be set from global.clusterName
+clusterName: ""  # Will be set from global.localClusterName by pattern framework
 
 global:
   pattern: layered-zero-trust
