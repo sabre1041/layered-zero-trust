@@ -62,13 +62,13 @@ spec:
       resources:
         {{- toYaml .Values.scanner.scannerV4.indexer.resources | nindent 8 }}
       {{- end }}
-      {{- if .Values.scanner.scannerV4.indexer.replicas }}
-      replicas: {{ .Values.scanner.scannerV4.indexer.replicas }}
-      {{- end }}
-      {{- if .Values.scanner.scannerV4.indexer.autoscaling }}
-      autoscaling:
+      {{- if or .Values.scanner.scannerV4.indexer.replicas .Values.scanner.scannerV4.indexer.autoscaling }}
+      scaling:
         {{- if .Values.scanner.scannerV4.indexer.autoscaling.enabled }}
-        status: Enabled
+        autoScaling: Enabled
+        {{- end }}
+        {{- if .Values.scanner.scannerV4.indexer.replicas }}
+        replicas: {{ .Values.scanner.scannerV4.indexer.replicas }}
         {{- end }}
         {{- if .Values.scanner.scannerV4.indexer.autoscaling.minReplicas }}
         minReplicas: {{ .Values.scanner.scannerV4.indexer.autoscaling.minReplicas }}
@@ -87,7 +87,8 @@ spec:
         {{- toYaml .Values.scanner.scannerV4.matcher.resources | nindent 8 }}
       {{- end }}
       {{- if .Values.scanner.scannerV4.matcher.replicas }}
-      replicas: {{ .Values.scanner.scannerV4.matcher.replicas }}
+      scaling:
+        replicas: {{ .Values.scanner.scannerV4.matcher.replicas }}
       {{- end }}
     {{- end }}
 
