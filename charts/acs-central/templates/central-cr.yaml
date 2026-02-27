@@ -46,17 +46,6 @@ spec:
       resources:
         {{- toYaml .Values.central.db.resources | nindent 8 }}
       {{- end }}
-      {{- if .Values.central.db.persistence }}
-      persistence:
-        persistentVolumeClaim:
-          claimName: central-db
-          {{- if .Values.central.db.persistence.storageClass }}
-          storageClassName: {{ .Values.central.db.persistence.storageClass }}
-          {{- end }}
-          {{- if .Values.central.db.persistence.size }}
-          size: {{ .Values.central.db.persistence.size }}
-          {{- end }}
-      {{- end }}
     {{- end }}
 
   egress:
@@ -108,17 +97,6 @@ spec:
       {{- if .Values.scanner.scannerV4.db.resources }}
       resources:
         {{- toYaml .Values.scanner.scannerV4.db.resources | nindent 8 }}
-      {{- end }}
-      {{- if .Values.scanner.scannerV4.db.persistence }}
-      persistence:
-        persistentVolumeClaim:
-          claimName: scanner-v4-db
-          {{- if .Values.scanner.scannerV4.db.persistence.storageClass }}
-          storageClassName: {{ .Values.scanner.scannerV4.db.persistence.storageClass }}
-          {{- end }}
-          {{- if .Values.scanner.scannerV4.db.persistence.size }}
-          size: {{ .Values.scanner.scannerV4.db.persistence.size }}
-          {{- end }}
       {{- end }}
     {{- end }}
   {{- end }}
