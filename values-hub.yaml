@@ -296,7 +296,7 @@ clusterGroup:
         defaultRole: qtodo
         roles:
           - name: qtodo
-            audience: qtodo
+            audience: https://keycloak.apps.{{ $.Values.global.clusterDomain }}/realms/ztvp
             subject: spiffe://apps.{{ $.Values.global.clusterDomain }}/ns/qtodo/sa/qtodo
             policies:
               - apps-qtodo-jwt-secret
