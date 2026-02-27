@@ -39,12 +39,88 @@ spec:
     resources:
       {{- toYaml .Values.central.resources | nindent 6 }}
 
+    {{- if .Values.central.db }}
+    # Central database configuration
+    db:
+      {{- if .Values.central.db.resources }}
+      resources:
+        {{- toYaml .Values.central.db.resources | nindent 8 }}
+      {{- end }}
+      {{- if .Values.central.db.persistence }}
+      persistence:
+        persistentVolumeClaim:
+          claimName: central-db
+          {{- if .Values.central.db.persistence.storageClass }}
+          storageClassName: {{ .Values.central.db.persistence.storageClass }}
+          {{- end }}
+          {{- if .Values.central.db.persistence.size }}
+          size: {{ .Values.central.db.persistence.size }}
+          {{- end }}
+      {{- end }}
+    {{- end }}
+
   egress:
     connectivityPolicy: Online
 
   {{- if .Values.scanner.scannerV4.enabled }}
   scannerV4:
     scannerComponent: Enabled
+
+    {{- if .Values.scanner.scannerV4.indexer }}
+    # Scanner V4 Indexer configuration
+    indexer:
+      {{- if .Values.scanner.scannerV4.indexer.resources }}
+      resources:
+        {{- toYaml .Values.scanner.scannerV4.indexer.resources | nindent 8 }}
+      {{- end }}
+      {{- if .Values.scanner.scannerV4.indexer.replicas }}
+      replicas: {{ .Values.scanner.scannerV4.indexer.replicas }}
+      {{- end }}
+      {{- if .Values.scanner.scannerV4.indexer.autoscaling }}
+      autoscaling:
+        {{- if .Values.scanner.scannerV4.indexer.autoscaling.enabled }}
+        status: Enabled
+        {{- end }}
+        {{- if .Values.scanner.scannerV4.indexer.autoscaling.minReplicas }}
+        minReplicas: {{ .Values.scanner.scannerV4.indexer.autoscaling.minReplicas }}
+        {{- end }}
+        {{- if .Values.scanner.scannerV4.indexer.autoscaling.maxReplicas }}
+        maxReplicas: {{ .Values.scanner.scannerV4.indexer.autoscaling.maxReplicas }}
+        {{- end }}
+      {{- end }}
+    {{- end }}
+
+    {{- if .Values.scanner.scannerV4.matcher }}
+    # Scanner V4 Matcher configuration
+    matcher:
+      {{- if .Values.scanner.scannerV4.matcher.resources }}
+      resources:
+        {{- toYaml .Values.scanner.scannerV4.matcher.resources | nindent 8 }}
+      {{- end }}
+      {{- if .Values.scanner.scannerV4.matcher.replicas }}
+      replicas: {{ .Values.scanner.scannerV4.matcher.replicas }}
+      {{- end }}
+    {{- end }}
+
+    {{- if .Values.scanner.scannerV4.db }}
+    # Scanner V4 Database configuration
+    db:
+      {{- if .Values.scanner.scannerV4.db.resources }}
+      resources:
+        {{- toYaml .Values.scanner.scannerV4.db.resources | nindent 8 }}
+      {{- end }}
+      {{- if .Values.scanner.scannerV4.db.persistence }}
+      persistence:
+        persistentVolumeClaim:
+          claimName: scanner-v4-db
+          {{- if .Values.scanner.scannerV4.db.persistence.storageClass }}
+          storageClassName: {{ .Values.scanner.scannerV4.db.persistence.storageClass }}
+          {{- end }}
+          {{- if .Values.scanner.scannerV4.db.persistence.size }}
+          size: {{ .Values.scanner.scannerV4.db.persistence.size }}
+          {{- end }}
+      {{- end }}
+    {{- end }}
   {{- end }}
 
   {{- if .Values.scanner.enabled }}

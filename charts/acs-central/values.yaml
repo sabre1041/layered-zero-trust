@@ -65,7 +65,7 @@ central:
         cpu: 200m
         memory: 2Gi
       limits:
-        cpu: 2000m
+        cpu: 500m
         memory: 4Gi
 
   # Exposure configuration
@@ -98,11 +98,11 @@ scanner:
       replicas: 1 # default 3
       resources:
         requests:
-          cpu: 1000m
-          memory: 1500Mi
+          cpu: 500m
+          memory: 1Gi
         limits:
-          cpu: 2000m
-          memory: 3Gi
+          cpu: 1000m
+          memory: 2Gi
 
       # Auto-scaling configuration
       autoscaling:
@@ -116,10 +116,10 @@ scanner:
       replicas: 1 # default 2
       resources:
         requests:
-          cpu: 500m
+          cpu: 250m
           memory: 500Mi
         limits:
-          cpu: 1000m
+          cpu: 500m
           memory: 1Gi
 
     # Database
@@ -133,7 +133,7 @@ scanner:
           cpu: 200m
           memory: 2Gi
         limits:
-          cpu: 2000m
+          cpu: 500m
           memory: 4Gi
 
 # Integration with other pattern components
