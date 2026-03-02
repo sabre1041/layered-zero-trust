@@ -153,8 +153,8 @@ integration:
 
   # Keycloak SSO integration
   keycloak:
-    enabled: false
-    realm: zero-trust
+    enabled: true
+    realm: ztvp
     clientId: acs-central
     clientSecret:
       secretName: keycloak-acs-client
