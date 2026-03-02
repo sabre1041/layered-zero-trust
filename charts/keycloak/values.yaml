@@ -403,7 +403,7 @@ keycloak:
       lastName: Administrator
       realmRoles:
       - acs-admin
-      username: acs-admin
+      username: admin
   ingress:
     enabled: true
     service: keycloak-service-trusted
