@@ -21,24 +21,70 @@ spec:
                 secretKeyRef:
                   name: {{ .Values.central.adminPassword.secretName }}
                   key: {{ .Values.central.adminPassword.secretKey }}
+            - name: KEYCLOAK_REALM
+              value: {{ .Values.integration.keycloak.realm | quote }}
+            - name: KEYCLOAK_CLIENT_ID
+              value: {{ .Values.integration.keycloak.clientId | quote }}
+            - name: KEYCLOAK_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.integration.keycloak.clientSecret.secretName }}
+                  key: {{ .Values.integration.keycloak.clientSecret.secretKey }}
+            - name: KEYCLOAK_ISSUER
+              value: "https://keycloak.apps.{{ .Values.global.localClusterDomain }}/realms/{{ .Values.integration.keycloak.realm }}"
           command:
             - /bin/bash
             - -c
             - |
               #!/usr/bin/env bash
 
-              echo "🔄 Configuring OpenShift OAuth authentication provider..."
+              echo "🔄 Configuring Keycloak OIDC authentication provider..."
+
+              # Wait for ACS Central to be ready
+              echo "⏳ Waiting for ACS Central API to be available..."
+              max_retries=30
+              retry_count=0
+              until curl -sk -u "admin:$PASSWORD" https://central/v1/ping > /dev/null 2>&1; do
+                retry_count=$((retry_count + 1))
+                if [ $retry_count -ge $max_retries ]; then
+                  echo "❌ Timeout waiting for ACS Central API"
+                  exit 1
+                fi
+                echo "  Retry $retry_count/$max_retries..."
+                sleep 10
+              done
+              echo "✅ ACS Central API is ready"
 
               # Check if auth provider already exists
               AUTH_PROVIDERS=$(curl -sk -u "admin:$PASSWORD" https://central/v1/authProviders)
-              if echo "$AUTH_PROVIDERS" | grep -q "OpenShift OAuth"; then
-                echo "✅ OpenShift OAuth provider already configured"
+              if echo "$AUTH_PROVIDERS" | grep -q "Keycloak OIDC"; then
+                echo "✅ Keycloak OIDC provider already configured"
                 exit 0
               fi
 
-              # Create OpenShift OAuth provider
+              # Create Keycloak OIDC provider
+              cat > /tmp/oidc-config.json <<EOF
+              {
+                "name": "Keycloak OIDC",
+                "type": "oidc",
+                "enabled": true,
+                "config": {
+                  "issuer": "$KEYCLOAK_ISSUER",
+                  "client_id": "$KEYCLOAK_CLIENT_ID",
+                  "client_secret": "$KEYCLOAK_CLIENT_SECRET",
+                  "mode": "auto"
+                },
+                "claimMappings": {
+                  "name": "preferred_username",
+                  "email": "email",
+                  "groups": "groups"
+                }
+              }
+              EOF
+
               curl -X POST -u "admin:$PASSWORD" -k https://central/v1/authProviders \
-                --data '{"name": "OpenShift OAuth", "type": "openshift", "enabled": true}' \
+                -H "Content-Type: application/json" \
+                --data @/tmp/oidc-config.json \
                 > /tmp/output.json
 
               if [ $? -ne 0 ]; then
@@ -58,19 +104,20 @@ spec:
 
               echo "✅ Auth provider created with ID: $AUTH_PROVIDER_ID"
 
-              # Create admin group mapping
-              JSON_PAYLOAD="{\"roleName\":\"Admin\",\"props\":{\"authProviderId\":\"$AUTH_PROVIDER_ID\",\"key\":\"name\",\"value\":\"kube:admin\"}}"
+              # Create admin role mapping for acs-admin role
+              JSON_PAYLOAD="{\"roleName\":\"Admin\",\"props\":{\"authProviderId\":\"$AUTH_PROVIDER_ID\",\"key\":\"roles\",\"value\":\"acs-admin\"}}"
 
               curl -X POST -u "admin:$PASSWORD" -k https://central/v1/groups \
+                -H "Content-Type: application/json" \
                 -s --data "$JSON_PAYLOAD"
 
               if [ $? -eq 0 ]; then
-                echo "✅ Admin group mapping created for kube:admin"
+                echo "✅ Admin role mapping created for acs-admin"
               else
-                echo "⚠️  Warning: Failed to create admin group mapping (may already exist)"
+                echo "⚠️  Warning: Failed to create admin role mapping (may already exist)"
               fi
 
-              echo "🎉 OpenShift OAuth configuration complete"
+              echo "🎉 Keycloak OIDC configuration complete"
           imagePullPolicy: Always
           name: create-auth-provider
       dnsPolicy: ClusterFirst

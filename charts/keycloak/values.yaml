@@ -24,6 +24,53 @@ keycloak:
       standardFlowEnabled: true
       webOrigins:
       - +
+    # ACS Central OIDC Client
+    - clientId: acs-central
+      enabled: true
+      name: Red Hat Advanced Cluster Security Central
+      protocol: openid-connect
+      publicClient: false
+      secret: ${ACS_CLIENT_SECRET}
+      redirectUris:
+      - '*'
+      directAccessGrantsEnabled: true
+      standardFlowEnabled: true
+      implicitFlowEnabled: false
+      webOrigins:
+      - '*'
+      fullScopeAllowed: true
+      defaultClientScopes:
+      - basic
+      - email
+      - profile
+      - roles
+      - web-origins
+      optionalClientScopes:
+      - address
+      - offline_access
+      - phone
+      protocolMappers:
+      - name: groups
+        protocol: openid-connect
+        protocolMapper: oidc-group-membership-mapper
+        consentRequired: false
+        config:
+          full.path: 'false'
+          id.token.claim: 'true'
+          access.token.claim: 'true'
+          claim.name: groups
+          userinfo.token.claim: 'true'
+      - name: roles
+        protocol: openid-connect
+        protocolMapper: oidc-usermodel-realm-role-mapper
+        consentRequired: false
+        config:
+          multivalued: 'true'
+          userinfo.token.claim: 'true'
+          id.token.claim: 'true'
+          access.token.claim: 'true'
+          claim.name: roles
+          jsonType.label: String
     - clientId: trusted-artifact-signer
       enabled: true
       name: Red Hat Trusted Artifact Signer Client
@@ -283,6 +330,8 @@ keycloak:
         name: create:sbom
       - description: RHTPA Document Creator
         name: create:document
+      - description: ACS Administrator
+        name: acs-admin
     users:
     - createdTimestamp: 1
       credentials:
@@ -342,6 +391,19 @@ keycloak:
       - create:sbom
       - create:document
       username: rhtpa-user
+    - createdTimestamp: 1
+      credentials:
+      - temporary: false
+        type: password
+        value: ${ACS_ADMIN_PASSWORD}
+      email: acs-admin@example.com
+      emailVerified: true
+      enabled: true
+      firstName: ACS
+      lastName: Administrator
+      realmRoles:
+      - acs-admin
+      username: acs-admin
   ingress:
     enabled: true
     service: keycloak-service-trusted
@@ -370,3 +432,6 @@ keycloak:
     # RHTPA CLI OIDC client secret (infra)
     rhtpaCli:
       vaultPath: secret/data/hub/infra/rhtpa/rhtpa-oidc-cli
+    # ACS Central OIDC client secret (infra)
+    acsClient:
+      vaultPath: secret/data/hub/infra/acs/acs-central
