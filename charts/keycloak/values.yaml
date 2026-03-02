@@ -396,7 +396,7 @@ keycloak:
       - temporary: false
         type: password
         value: ${ACS_ADMIN_PASSWORD}
-      email: acs-admin@example.com
+      email: admin@example.com
       emailVerified: true
       enabled: true
       firstName: ACS
