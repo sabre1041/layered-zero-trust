@@ -31,7 +31,7 @@ spec:
                   name: {{ .Values.integration.keycloak.clientSecret.secretName }}
                   key: {{ .Values.integration.keycloak.clientSecret.secretKey }}
             - name: KEYCLOAK_ISSUER
-              value: "https://keycloak.apps.{{ .Values.global.localClusterDomain }}/realms/{{ .Values.integration.keycloak.realm }}"
+              value: "https://keycloak.{{ .Values.global.localClusterDomain }}/realms/{{ .Values.integration.keycloak.realm }}"
           command:
             - /bin/bash
             - -c
