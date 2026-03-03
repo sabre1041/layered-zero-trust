@@ -36,6 +36,10 @@ spec:
       secret:
         name: {{ $.Values.keycloak.users.secretName }}
         key: rhtpa-user-password
+    ACS_ADMIN_PASSWORD:
+      secret:
+        name: {{ $.Values.keycloak.users.secretName }}
+        key: acs-admin-password
     QTODO_CLIENT_SECRET:
       secret:
         name: oidc-client-secret

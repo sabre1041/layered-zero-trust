@@ -62,12 +62,17 @@ spec:
                 exit 0
               fi
 
+              # Get ACS Central external URL
+              ACS_CENTRAL_URL="https://$(oc get route central -n stackrox -o jsonpath='{.spec.host}')"
+              echo "ACS Central URL: $ACS_CENTRAL_URL"
+
               # Create Keycloak OIDC provider
               cat > /tmp/oidc-config.json <<EOF
               {
                 "name": "Keycloak OIDC",
                 "type": "oidc",
                 "enabled": true,
+                "uiEndpoint": "$ACS_CENTRAL_URL",
                 "config": {
                   "issuer": "$KEYCLOAK_ISSUER",
                   "client_id": "$KEYCLOAK_CLIENT_ID",
