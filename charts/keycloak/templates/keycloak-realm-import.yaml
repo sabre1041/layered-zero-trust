@@ -40,6 +40,10 @@ spec:
       secret:
         name: {{ $.Values.keycloak.users.secretName }}
         key: acs-admin-password
+    ACS_CLIENT_SECRET:
+      secret:
+        name: acs-oidc-client-secret
+        key: client-secret
     QTODO_CLIENT_SECRET:
       secret:
         name: oidc-client-secret
