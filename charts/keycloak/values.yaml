@@ -45,9 +45,9 @@ keycloak:
       - profile
       - roles
       - web-origins
+      - offline_access
       optionalClientScopes:
       - address
-      - offline_access
       - phone
       protocolMappers:
       - name: groups
