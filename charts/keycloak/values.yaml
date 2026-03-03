@@ -421,6 +421,7 @@ keycloak:
       lastName: Administrator
       realmRoles:
       - acs-admin
+      - offline_access
       username: admin
   ingress:
     enabled: true

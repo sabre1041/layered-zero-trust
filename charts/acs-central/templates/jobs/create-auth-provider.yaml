@@ -77,7 +77,7 @@ spec:
                   "issuer": "ISSUER_PLACEHOLDER",
                   "client_id": "CLIENT_ID_PLACEHOLDER",
                   "client_secret": "CLIENT_SECRET_PLACEHOLDER",
-                  "mode": "auto"
+                  "mode": "query"
                 },
                 "claimMappings": {
                   "name": "preferred_username",
