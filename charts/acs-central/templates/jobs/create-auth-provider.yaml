@@ -67,25 +67,36 @@ spec:
               echo "ACS Central URL: $ACS_CENTRAL_URL"
 
               # Create Keycloak OIDC provider
-              cat > /tmp/oidc-config.json <<EOF
-              {
-                "name": "Keycloak OIDC",
-                "type": "oidc",
-                "enabled": true,
-                "uiEndpoint": "$ACS_CENTRAL_URL",
-                "config": {
-                  "issuer": "$KEYCLOAK_ISSUER",
-                  "client_id": "$KEYCLOAK_CLIENT_ID",
-                  "client_secret": "$KEYCLOAK_CLIENT_SECRET",
-                  "mode": "auto"
-                },
-                "claimMappings": {
-                  "name": "preferred_username",
-                  "email": "email",
-                  "groups": "groups"
-                }
-              }
-              EOF
+              cat > /tmp/oidc-config.json <<'EOF'
+{
+  "name": "Keycloak OIDC",
+  "type": "oidc",
+  "enabled": true,
+  "uiEndpoint": "ACS_CENTRAL_URL_PLACEHOLDER",
+  "config": {
+    "issuer": "KEYCLOAK_ISSUER_PLACEHOLDER",
+    "client_id": "KEYCLOAK_CLIENT_ID_PLACEHOLDER",
+    "client_secret": "KEYCLOAK_CLIENT_SECRET_PLACEHOLDER",
+    "mode": "auto"
+  },
+  "claimMappings": {
+    "name": "preferred_username",
+    "email": "email",
+    "groups": "groups"
+  }
+}
+EOF
+
+              # Replace placeholders with actual values
+              sed -i "s|ACS_CENTRAL_URL_PLACEHOLDER|$ACS_CENTRAL_URL|g" /tmp/oidc-config.json
+              sed -i "s|KEYCLOAK_ISSUER_PLACEHOLDER|$KEYCLOAK_ISSUER|g" /tmp/oidc-config.json
+              sed -i "s|KEYCLOAK_CLIENT_ID_PLACEHOLDER|$KEYCLOAK_CLIENT_ID|g" /tmp/oidc-config.json
+              sed -i "s|KEYCLOAK_CLIENT_SECRET_PLACEHOLDER|$KEYCLOAK_CLIENT_SECRET|g" /tmp/oidc-config.json
+
+              # Debug: Show the JSON payload
+              echo "📝 OIDC Configuration JSON:"
+              cat /tmp/oidc-config.json
+              echo ""
 
               curl -X POST -u "admin:$PASSWORD" -k https://central/v1/authProviders \
                 -H "Content-Type: application/json" \
