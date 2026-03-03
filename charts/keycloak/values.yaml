@@ -40,15 +40,16 @@ keycloak:
       - '*'
       fullScopeAllowed: true
       defaultClientScopes:
+      - openid
       - basic
       - email
       - profile
       - roles
       - web-origins
-      - offline_access
       optionalClientScopes:
       - address
       - phone
+      - offline_access
       protocolMappers:
       - name: groups
         protocol: openid-connect
@@ -179,6 +180,22 @@ keycloak:
     # Note: We must define 'basic' scope with 'sub' mapper for OIDC compliance
     # The 'sub' claim is required by RHTPA for user identification
     clientScopes:
+    # OpenID scope - mandatory OIDC scope (required by ACS and other OIDC clients)
+    - name: openid
+      description: OpenID Connect built-in scope
+      protocol: openid-connect
+      attributes:
+        include.in.token.scope: 'true'
+        display.on.consent.screen: 'false'
+      protocolMappers:
+      - name: sub
+        protocol: openid-connect
+        protocolMapper: oidc-sub-mapper
+        consentRequired: false
+        config:
+          introspection.token.claim: 'true'
+          access.token.claim: 'true'
+          id.token.claim: 'true'
     # Basic scope - required for 'sub' claim in tokens
     # Standard OIDC scopes required by Trustify/RHTPA
     # Reference: https://github.com/mrrajan/trustify/blob/doc_rhbk_operator/docs/book/modules/admin/pages/infrastructure.adoc
@@ -315,6 +332,7 @@ keycloak:
         display.on.consent.screen: 'false'
     # Set default client scopes for the realm (applied to all new clients)
     defaultDefaultClientScopes:
+    - openid
     - basic
     - email
     - profile
