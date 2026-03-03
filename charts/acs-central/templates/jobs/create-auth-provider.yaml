@@ -62,9 +62,9 @@ spec:
                 exit 0
               fi
 
-              # Get ACS Central external URL
-              ACS_CENTRAL_URL="https://$(oc get route central -n stackrox -o jsonpath='{.spec.host}')"
-              echo "ACS Central URL: $ACS_CENTRAL_URL"
+              # Get ACS Central hostname (without https://)
+              ACS_CENTRAL_HOSTNAME="$(oc get route central -n stackrox -o jsonpath='{.spec.host}')"
+              echo "ACS Central hostname: $ACS_CENTRAL_HOSTNAME"
 
               # Create Keycloak OIDC provider JSON
               cat > /tmp/oidc-config.json << 'OIDCEOF'
@@ -91,7 +91,7 @@ spec:
               sed -i 's/^              //g' /tmp/oidc-config.json
 
               # Replace placeholders
-              sed -i "s|UI_ENDPOINT_PLACEHOLDER|$ACS_CENTRAL_URL|g" /tmp/oidc-config.json
+              sed -i "s|UI_ENDPOINT_PLACEHOLDER|$ACS_CENTRAL_HOSTNAME|g" /tmp/oidc-config.json
               sed -i "s|ISSUER_PLACEHOLDER|$KEYCLOAK_ISSUER|g" /tmp/oidc-config.json
               sed -i "s|CLIENT_ID_PLACEHOLDER|$KEYCLOAK_CLIENT_ID|g" /tmp/oidc-config.json
               sed -i "s|CLIENT_SECRET_PLACEHOLDER|$KEYCLOAK_CLIENT_SECRET|g" /tmp/oidc-config.json
