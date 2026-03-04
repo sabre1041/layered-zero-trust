@@ -55,6 +55,22 @@ spec:
               done
               echo "✅ ACS Central API is ready"
 
+              # Wait for Keycloak OIDC discovery endpoint to be available
+              echo "⏳ Waiting for Keycloak OIDC discovery endpoint..."
+              max_retries=30
+              retry_count=0
+              until curl -sk "$KEYCLOAK_ISSUER/.well-known/openid-configuration" > /dev/null 2>&1; do
+                retry_count=$((retry_count + 1))
+                if [ $retry_count -ge $max_retries ]; then
+                  echo "❌ Timeout waiting for Keycloak OIDC discovery endpoint"
+                  echo "   Tried: $KEYCLOAK_ISSUER/.well-known/openid-configuration"
+                  exit 1
+                fi
+                echo "  Retry $retry_count/$max_retries..."
+                sleep 10
+              done
+              echo "✅ Keycloak OIDC discovery endpoint is ready"
+
               # Check if auth provider already exists
               AUTH_PROVIDERS=$(curl -sk -u "admin:$PASSWORD" https://central/v1/authProviders)
               if echo "$AUTH_PROVIDERS" | grep -q "Keycloak OIDC"; then
