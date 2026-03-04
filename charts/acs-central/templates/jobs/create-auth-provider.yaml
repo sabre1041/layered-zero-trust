@@ -98,7 +98,8 @@ spec:
                 "claimMappings": {
                   "name": "preferred_username",
                   "email": "email",
-                  "groups": "groups"
+                  "groups": "groups",
+                  "roles": "roles"
                 }
               }
               OIDCEOF
