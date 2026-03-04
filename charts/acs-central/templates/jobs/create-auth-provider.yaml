@@ -117,14 +117,25 @@ spec:
               cat /tmp/oidc-config.json
               echo ""
 
-              curl -X POST -u "admin:$PASSWORD" -k https://central/v1/authProviders \
+              # Verify Keycloak discovery endpoint one more time before creating provider
+              echo "🔍 Verifying Keycloak discovery endpoint..."
+              curl -sk "$KEYCLOAK_ISSUER/.well-known/openid-configuration" | head -20
+              echo ""
+
+              echo "📤 Creating auth provider in ACS..."
+              HTTP_CODE=$(curl -X POST -u "admin:$PASSWORD" -k https://central/v1/authProviders \
                 -H "Content-Type: application/json" \
                 --data @/tmp/oidc-config.json \
-                > /tmp/output.json
+                -w "%{http_code}" \
+                -o /tmp/output.json)
 
-              if [ $? -ne 0 ]; then
-                echo "❌ Failed to create auth provider"
-                cat /tmp/output.json
+              echo "📥 Response HTTP Code: $HTTP_CODE"
+              echo "📥 Response Body:"
+              cat /tmp/output.json
+              echo ""
+
+              if [ "$HTTP_CODE" != "200" ]; then
+                echo "❌ Failed to create auth provider (HTTP $HTTP_CODE)"
                 exit 1
               fi
 
@@ -140,16 +151,23 @@ spec:
               echo "✅ Auth provider created with ID: $AUTH_PROVIDER_ID"
 
               # Create admin role mapping for acs-admin role
+              echo "📝 Creating role mapping: acs-admin → Admin"
               JSON_PAYLOAD="{\"roleName\":\"Admin\",\"props\":{\"authProviderId\":\"$AUTH_PROVIDER_ID\",\"key\":\"roles\",\"value\":\"acs-admin\"}}"
 
-              curl -X POST -u "admin:$PASSWORD" -k https://central/v1/groups \
+              HTTP_CODE=$(curl -X POST -u "admin:$PASSWORD" -k https://central/v1/groups \
                 -H "Content-Type: application/json" \
-                -s --data "$JSON_PAYLOAD"
+                --data "$JSON_PAYLOAD" \
+                -w "%{http_code}" \
+                -o /tmp/role-mapping.json)
 
-              if [ $? -eq 0 ]; then
+              echo "📥 Role mapping response (HTTP $HTTP_CODE):"
+              cat /tmp/role-mapping.json
+              echo ""
+
+              if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "201" ]; then
                 echo "✅ Admin role mapping created for acs-admin"
               else
-                echo "⚠️  Warning: Failed to create admin role mapping (may already exist)"
+                echo "⚠️  Warning: Failed to create admin role mapping (HTTP $HTTP_CODE, may already exist)"
               fi
 
               echo "🎉 Keycloak OIDC configuration complete"
