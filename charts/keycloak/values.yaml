@@ -454,3 +454,32 @@ keycloak:
     # ACS Central OIDC client secret (infra)
     acsClient:
       vaultPath: secret/data/hub/infra/acs/acs-central
+  # SPIFFE Identity Provider for Federated Client Authentication
+  # Requires RHBK 26.4+ with Technology Preview features: spiffe + client-auth-federated
+  # (automatically enabled in keycloak.yaml when this is enabled)
+  #
+  # Enables two capabilities:
+  # 1. Federated Client Authentication: Clients authenticate to Keycloak using
+  #    SPIFFE JWT SVIDs instead of client secrets (clientAuthenticatorType: federated-jwt)
+  # 2. Token Exchange: Workloads exchange SPIFFE JWT SVIDs for Keycloak access tokens
+  #
+  # Reference: https://www.keycloak.org/2026/01/federated-client-authentication
+  # Playground: https://github.com/keycloak/keycloak-playground/tree/main/federated-client-authentication/spiffe
+  spiffeIdentityProvider:
+    enabled: true
+    config:
+      alias: spiffe
+      displayName: SPIFFE Workload Identity
+      providerId: spiffe
+      enabled: true
+      config:
+        # SPIFFE trust domain in URI format (auto-generated from global.localClusterDomain if empty)
+        # Keycloak stores this under the "issuer" config key internally
+        # Format: spiffe://<localClusterDomain>
+        issuer: ""
+        # SPIRE OIDC Discovery Provider JWKS URL (auto-generated from global.localClusterDomain if empty)
+        # Defaults to: https://spire-spiffe-oidc-discovery-provider.<localClusterDomain>/keys
+        # Uses standard TLS (OpenShift route) — no custom CA or truststore management needed.
+        # Note: Keycloak stores this internally as "bundleEndpoint"; we use "jwksUrl" here
+        # to clearly indicate it targets the OIDC JWKS endpoint, not the SPIRE federation bundle.
+        jwksUrl: ""
