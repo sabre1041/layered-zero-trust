@@ -112,7 +112,6 @@ clusterGroup:
       namespace: openshift-operators
       channel: stable
       source: redhat-operators
-    #  csv: rhacs-operator.v4.9.0
     #
     # Storage and Registry operator subscriptions
     # Required for RHTPA and QUAY (provides NooBaa object storage backend)
@@ -511,8 +510,9 @@ clusterGroup:
       project: hub
       path: charts/acs-central
       overrides:
-        - name: central.persistence.storageClass
-          value: gp3-csi
+    # Uncomment and set if you need a specific StorageClass:
+    #    - name: central.persistence.storageClass
+    #      value: gp3-csi # Example for AWS
         - name: central.exposure.route.enabled
           value: "true"
         - name: integration.keycloak.enabled

@@ -159,6 +159,22 @@ integration:
     clientSecret:
       secretName: keycloak-acs-client
       secretKey: secret
+    # OIDC claim mappings - these map identity provider claims to ACS attributes
+    # Different identity providers may use different claim names
+    claimMappings:
+      name: preferred_username    # Keycloak default; Azure AD might use "upn" or "unique_name"
+      email: email                # Standard claim across most providers
+      groups: groups              # Keycloak/Okta use "groups"; Azure AD might use "groups" or custom claim
+      roles: roles                # Custom claim for role-based access control
+    # Container image for the auth provider configuration job
+    # Uses OpenShift CLI tools (curl, oc, jq, etc.)
+    jobImage:
+      registry: image-registry.openshift-image-registry.svc:5000
+      repository: openshift/cli
+      tag: latest
+      pullPolicy: IfNotPresent
+    # Service account used by jobs (init bundle, auth provider, htpasswd)
+    serviceAccountName: create-cluster-init
 
 # Network policies
 networkPolicies:

@@ -16,15 +16,11 @@ spec:
       name: {{ .Values.central.adminPassword.secretName }}
 
     exposure:
-      {{- if .Values.central.exposure.loadBalancer.enabled }}
       loadBalancer:
-        enabled: true
+        enabled: {{ .Values.central.exposure.loadBalancer.enabled }}
         port: 443
-      {{- end }}
-      {{- if .Values.central.exposure.route.enabled }}
       route:
-        enabled: true
-      {{- end }}
+        enabled: {{ .Values.central.exposure.route.enabled }}
 
     {{- if .Values.central.persistence.enabled }}
     persistence:

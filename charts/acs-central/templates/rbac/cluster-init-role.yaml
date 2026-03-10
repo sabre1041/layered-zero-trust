@@ -1,7 +1,7 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: create-cluster-init
+  name: {{ .Values.integration.keycloak.serviceAccountName }}
   namespace: {{ .Release.Namespace }}
   labels:
     {{- include "acs-central.labels" . | nindent 4 }}

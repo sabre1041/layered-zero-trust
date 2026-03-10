@@ -12,5 +12,5 @@ roleRef:
   name: create-cluster-init-consolelink
 subjects:
 - kind: ServiceAccount
-  name: create-cluster-init
+  name: {{ .Values.integration.keycloak.serviceAccountName }}
   namespace: {{ .Release.Namespace }}

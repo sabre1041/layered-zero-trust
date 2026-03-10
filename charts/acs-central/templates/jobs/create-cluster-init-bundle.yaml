@@ -24,7 +24,8 @@ spec:
         {{- include "acs-central.labels" . | nindent 8 }}
     spec:
       containers:
-        - image: image-registry.openshift-image-registry.svc:5000/openshift/cli:latest
+        - image: {{ .Values.integration.keycloak.jobImage.registry }}/{{ .Values.integration.keycloak.jobImage.repository }}:{{ .Values.integration.keycloak.jobImage.tag }}
+          imagePullPolicy: {{ .Values.integration.keycloak.jobImage.pullPolicy }}
           env:
             - name: PASSWORD
               valueFrom:
@@ -137,11 +138,10 @@ spec:
               fi
 
               echo "🎉 ACS cluster init bundle configuration complete"
-          imagePullPolicy: Always
           name: create-cluster-init-bundle
       dnsPolicy: ClusterFirst
       restartPolicy: Never
-      serviceAccount: create-cluster-init
-      serviceAccountName: create-cluster-init
+      serviceAccount: {{ .Values.integration.keycloak.serviceAccountName }}
+      serviceAccountName: {{ .Values.integration.keycloak.serviceAccountName }}
       terminationGracePeriodSeconds: 30
 {{- end }}
