@@ -24,6 +24,41 @@ keycloak:
       standardFlowEnabled: true
       webOrigins:
       - +
+    - clientId: trusted-artifact-signer
+      enabled: true
+      name: Red Hat Trusted Artifact Signer Client
+      protocol: openid-connect
+      publicClient: true
+      redirectUris:
+      - '*'
+      - 'urn:ietf:wg:oauth:2.0:oob'
+      - 'http://localhost:*/auth/callback'
+      directAccessGrantsEnabled: true
+      standardFlowEnabled: true
+      implicitFlowEnabled: false
+      webOrigins:
+      - +
+      attributes:
+        oauth2.device.authorization.grant.enabled: 'true'
+      protocolMappers:
+      - name: audience-mapper
+        protocol: openid-connect
+        protocolMapper: oidc-audience-mapper
+        config:
+          included.client.audience: trusted-artifact-signer
+          access.token.claim: 'true'
+          id.token.claim: 'false'
+      - name: email-mapper
+        protocol: openid-connect
+        protocolMapper: oidc-hardcoded-claim-mapper
+        consentRequired: false
+        config:
+          claim.name: email_verified
+          claim.value: 'true'
+          jsonType.label: boolean
+          access.token.claim: 'true'
+          id.token.claim: 'true'
+          userinfo.token.claim: 'false'
     # ACS Central OIDC Client
     - clientId: acs-central
       enabled: true
@@ -72,41 +107,6 @@ keycloak:
           access.token.claim: 'true'
           claim.name: roles
           jsonType.label: String
-    - clientId: trusted-artifact-signer
-      enabled: true
-      name: Red Hat Trusted Artifact Signer Client
-      protocol: openid-connect
-      publicClient: true
-      redirectUris:
-      - '*'
-      - 'urn:ietf:wg:oauth:2.0:oob'
-      - 'http://localhost:*/auth/callback'
-      directAccessGrantsEnabled: true
-      standardFlowEnabled: true
-      implicitFlowEnabled: false
-      webOrigins:
-      - +
-      attributes:
-        oauth2.device.authorization.grant.enabled: 'true'
-      protocolMappers:
-      - name: audience-mapper
-        protocol: openid-connect
-        protocolMapper: oidc-audience-mapper
-        config:
-          included.client.audience: trusted-artifact-signer
-          access.token.claim: 'true'
-          id.token.claim: 'false'
-      - name: email-mapper
-        protocol: openid-connect
-        protocolMapper: oidc-hardcoded-claim-mapper
-        consentRequired: false
-        config:
-          claim.name: email_verified
-          claim.value: 'true'
-          jsonType.label: boolean
-          access.token.claim: 'true'
-          id.token.claim: 'true'
-          userinfo.token.claim: 'false'
     # RHTPA CLI Client - matches Trustify 'cli' client configuration
     # Reference: https://github.com/guacsec/trustify-helm-charts/blob/main/charts/trustify-infrastructure/templates/keycloak/010-ConfigMap.yaml
     - clientId: rhtpa-cli
