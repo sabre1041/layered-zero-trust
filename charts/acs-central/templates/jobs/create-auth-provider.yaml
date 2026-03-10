@@ -114,15 +114,25 @@ spec:
               # Remove leading spaces from JSON
               sed -i 's/^              //g' /tmp/oidc-config.json
 
-              # Replace placeholders
-              sed -i "s|UI_ENDPOINT_PLACEHOLDER|$ACS_CENTRAL_HOSTNAME|g" /tmp/oidc-config.json
-              sed -i "s|ISSUER_PLACEHOLDER|$KEYCLOAK_ISSUER|g" /tmp/oidc-config.json
-              sed -i "s|CLIENT_ID_PLACEHOLDER|$KEYCLOAK_CLIENT_ID|g" /tmp/oidc-config.json
-              sed -i "s|CLIENT_SECRET_PLACEHOLDER|$KEYCLOAK_CLIENT_SECRET|g" /tmp/oidc-config.json
-              sed -i "s|CLAIM_NAME_PLACEHOLDER|$CLAIM_NAME|g" /tmp/oidc-config.json
-              sed -i "s|CLAIM_EMAIL_PLACEHOLDER|$CLAIM_EMAIL|g" /tmp/oidc-config.json
-              sed -i "s|CLAIM_GROUPS_PLACEHOLDER|$CLAIM_GROUPS|g" /tmp/oidc-config.json
-              sed -i "s|CLAIM_ROLES_PLACEHOLDER|$CLAIM_ROLES|g" /tmp/oidc-config.json
+              # Replace placeholders using printf and sed to safely handle special characters
+              # Escape special sed characters in variables: & \ / and newlines
+              ACS_CENTRAL_HOSTNAME_ESC=$(printf '%s\n' "$ACS_CENTRAL_HOSTNAME" | sed 's:[&\\/]:\\&:g')
+              KEYCLOAK_ISSUER_ESC=$(printf '%s\n' "$KEYCLOAK_ISSUER" | sed 's:[&\\/]:\\&:g')
+              KEYCLOAK_CLIENT_ID_ESC=$(printf '%s\n' "$KEYCLOAK_CLIENT_ID" | sed 's:[&\\/]:\\&:g')
+              KEYCLOAK_CLIENT_SECRET_ESC=$(printf '%s\n' "$KEYCLOAK_CLIENT_SECRET" | sed 's:[&\\/]:\\&:g')
+              CLAIM_NAME_ESC=$(printf '%s\n' "$CLAIM_NAME" | sed 's:[&\\/]:\\&:g')
+              CLAIM_EMAIL_ESC=$(printf '%s\n' "$CLAIM_EMAIL" | sed 's:[&\\/]:\\&:g')
+              CLAIM_GROUPS_ESC=$(printf '%s\n' "$CLAIM_GROUPS" | sed 's:[&\\/]:\\&:g')
+              CLAIM_ROLES_ESC=$(printf '%s\n' "$CLAIM_ROLES" | sed 's:[&\\/]:\\&:g')
+
+              sed -i "s|UI_ENDPOINT_PLACEHOLDER|$ACS_CENTRAL_HOSTNAME_ESC|g" /tmp/oidc-config.json
+              sed -i "s|ISSUER_PLACEHOLDER|$KEYCLOAK_ISSUER_ESC|g" /tmp/oidc-config.json
+              sed -i "s|CLIENT_ID_PLACEHOLDER|$KEYCLOAK_CLIENT_ID_ESC|g" /tmp/oidc-config.json
+              sed -i "s|CLIENT_SECRET_PLACEHOLDER|$KEYCLOAK_CLIENT_SECRET_ESC|g" /tmp/oidc-config.json
+              sed -i "s|CLAIM_NAME_PLACEHOLDER|$CLAIM_NAME_ESC|g" /tmp/oidc-config.json
+              sed -i "s|CLAIM_EMAIL_PLACEHOLDER|$CLAIM_EMAIL_ESC|g" /tmp/oidc-config.json
+              sed -i "s|CLAIM_GROUPS_PLACEHOLDER|$CLAIM_GROUPS_ESC|g" /tmp/oidc-config.json
+              sed -i "s|CLAIM_ROLES_PLACEHOLDER|$CLAIM_ROLES_ESC|g" /tmp/oidc-config.json
 
               # Debug: Show the JSON payload
               echo "📝 OIDC Configuration JSON:"
