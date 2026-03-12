@@ -1,0 +1,10 @@
+# ACS Policies Configuration
+# Control which policies are enabled/disabled via the 'disabled' field
+# Note: Built-in ACS policies must be managed through the ACS UI or API,
+# not via SecurityPolicy CRDs. Only custom policies can be managed here.
+
+policies:
+  # Custom policy: Stop pods executing suspicious commands (runtime protection)
+  # Disabled by default - enable after testing
+  stopSuspiciousExec:
+    disabled: true

@@ -551,6 +551,14 @@ clusterGroup:
         - /values-{{ .Values.global.pattern }}-hub.yaml
       annotations:
         argocd.argoproj.io/sync-wave: "15"
+    # ACS Policies (Uncomment to enable)
+    acs-policies:
+      name: acs-policies
+      namespace: stackrox
+      project: hub
+      path: charts/acs-central/policies
+      annotations:
+        argocd.argoproj.io/sync-wave: "20"
   argoCD:
     resourceHealthChecks:
       - check: |

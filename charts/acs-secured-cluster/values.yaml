@@ -32,6 +32,10 @@ sensor:
 admissionControl:
   enabled: true
 
+  # Policy enforcement setting
+  # Set to "Enabled" to enforce policies, "Disabled" to only alert (not recommended)
+  enforcement: Enabled
+
   # Bypass configuration
   bypass:
     enabled: false

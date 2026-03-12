@@ -15,6 +15,7 @@ spec:
 
   {{- if .Values.admissionControl.enabled }}
   admissionControl:
+    enforcement: {{ .Values.admissionControl.enforcement | default "Enabled" }}
     listenOnCreates: {{ .Values.admissionControl.listenOnCreates }}
     listenOnUpdates: {{ .Values.admissionControl.listenOnUpdates }}
     listenOnEvents: {{ .Values.admissionControl.listenOnEvents }}
