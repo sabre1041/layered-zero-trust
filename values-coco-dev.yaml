@@ -324,7 +324,6 @@ clusterGroup:
       name: trustee
       namespace: trustee-operator-system
       project: hub
-      repoURL: https://github.com/validatedpatterns/trustee-chart.git
       chartVersion: v0.2.1
       extraValueFiles:
         - /overrides/values-trustee.yaml
