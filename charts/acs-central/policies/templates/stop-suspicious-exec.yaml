@@ -16,7 +16,8 @@ spec:
   eventSource: "DEPLOYMENT_EVENT"
   severity: "CRITICAL_SEVERITY"
   enforcementActions:
-    - "SCALE_TO_ZERO_ENFORCEMENT"
+    #- "SCALE_TO_ZERO_ENFORCEMENT"
+    - "KILL_POD_ENFORCEMENT"
   policySections:
     - sectionName: "Suspicious Command Execution"
       policyGroups:
