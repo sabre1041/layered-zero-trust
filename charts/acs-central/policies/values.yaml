@@ -7,4 +7,4 @@ policies:
   # Custom policy: Stop pods executing suspicious commands (runtime protection)
   # Disabled by default - enable after testing
   stopSuspiciousExec:
-    disabled: true
+    disabled: false
