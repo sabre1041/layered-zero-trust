@@ -20,11 +20,11 @@ spec:
   policySections:
     - sectionName: "Suspicious Command Execution"
       policyGroups:
-        - fieldName: "Process Arguments"
+        - fieldName: "Process Name"
           booleanOperator: "OR"
           negate: false
           values:
-            - value: "ncat.*"
-            - value: "nmap.*"
-            - value: "curl.*"
-            - value: "wget.*"
+            - value: "ncat"
+            - value: "nmap"
+            - value: "curl"
+            - value: "wget"
