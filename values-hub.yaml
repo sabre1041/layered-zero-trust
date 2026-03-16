@@ -28,24 +28,24 @@ clusterGroup:
         targetNamespace: cert-manager-operator
     # Layer 1: Storage and Registry
     # Required for RHTPA and QUAY (provides NooBaa object storage backend)
-    # - openshift-storage:
-    #     operatorGroup: true
-    #     targetNamespace: openshift-storage
-    #     annotations:
-    #       openshift.io/cluster-monitoring: "true"
-    #       argocd.argoproj.io/sync-wave: "-5"  # Propagated to OperatorGroup by framework
-    # - quay-enterprise:
-    #     annotations:
-    #       argocd.argoproj.io/sync-wave: "1"  # Create before NooBaa and all Quay components
-    #     labels:
-    #       openshift.io/cluster-monitoring: "true"
+    - openshift-storage:
+        operatorGroup: true
+        targetNamespace: openshift-storage
+        annotations:
+          openshift.io/cluster-monitoring: "true"
+          argocd.argoproj.io/sync-wave: "-5"  # Propagated to OperatorGroup by framework
+    - quay-enterprise:
+        annotations:
+          argocd.argoproj.io/sync-wave: "1"  # Create before NooBaa and all Quay components
+        labels:
+          openshift.io/cluster-monitoring: "true"
     # RHTAS namespace (required when RHTAS application is enabled)
     # COMMENTED OUT: Uncomment to enable RHTAS with SPIFFE signing
-    # - trusted-artifact-signer:
-    #     annotations:
-    #       argocd.argoproj.io/sync-wave: "1"  # Auto-created by RHTAS operator
-    #     labels:
-    #       openshift.io/cluster-monitoring: "true"
+    - trusted-artifact-signer:
+        annotations:
+          argocd.argoproj.io/sync-wave: "1"  # Auto-created by RHTAS operator
+        labels:
+          openshift.io/cluster-monitoring: "true"
     # - rhtpa-operator:
     #     operatorGroup: true
     #     targetNamespace: rhtpa-operator
@@ -66,17 +66,11 @@ clusterGroup:
           openshift.io/cluster-monitoring: "true"
     # Secure Supply Chain: Uncomment to enable OpenShift Pipelines
     # - openshift-pipelines
-    #
-    # Red Hat Advanced Cluster Security (RHACS/StackRox) - Uncomment to enable
-    - stackrox:
-        operatorGroup: true
-        labels:
-          openshift.io/cluster-monitoring: "true"
   subscriptions:
     acm:
       name: advanced-cluster-management
       namespace: open-cluster-management
-      channel: release-2.15
+      channel: release-2.14
       catalogSource: redhat-operators
     cert-manager:
       name: openshift-cert-manager-operator
@@ -105,38 +99,30 @@ clusterGroup:
       config:
         nodeSelector:
           node-role.kubernetes.io/worker: ""
-    #
-    # ACS Operator Subscription (Uncomment to enable)
-    rhacs-operator:
-      name: rhacs-operator
-      namespace: openshift-operators
-      channel: stable
-      source: redhat-operators
-    #
     # Storage and Registry operator subscriptions
     # Required for RHTPA and QUAY (provides NooBaa object storage backend)
     # ODF provides object storage backend (NooBaa) for RHTPA and optionally Quay
-    # odf:
-    #   name: odf-operator
-    #   namespace: openshift-storage
-    #   channel: stable-4.20
-    #   annotations:
-    #     argocd.argoproj.io/sync-wave: "-4"  # Install after OperatorGroup (-5)
-    # quay-operator:
-    #   name: quay-operator
-    #   namespace: openshift-operators
-    #   channel: stable-3.15
-    #   annotations:
-    #     argocd.argoproj.io/sync-wave: "-3"  # Install after ODF operator
+    odf:
+      name: odf-operator
+      namespace: openshift-storage
+      channel: stable-4.20
+      annotations:
+        argocd.argoproj.io/sync-wave: "-4"  # Install after OperatorGroup (-5)
+    quay-operator:
+      name: quay-operator
+      namespace: openshift-operators
+      channel: stable-3.15
+      annotations:
+        argocd.argoproj.io/sync-wave: "-3"  # Install after ODF operator
     # RHTAS operator subscription (required when RHTAS application is enabled)
     # COMMENTED OUT: Uncomment to enable RHTAS with SPIFFE integration
-    # rhtas-operator:
-    #   name: rhtas-operator
-    #   namespace: openshift-operators
-    #   channel: stable
-    #   annotations:
-    #     argocd.argoproj.io/sync-wave: "-2"  # Install after Quay operator, before applications
-    #   catalogSource: redhat-operators
+    rhtas-operator:
+      name: rhtas-operator
+      namespace: openshift-operators
+      channel: stable
+      annotations:
+        argocd.argoproj.io/sync-wave: "-2"  # Install after Quay operator, before applications
+      catalogSource: redhat-operators
     # RHTPA operator subscription
     # Channel: stable-v1.1 provides latest 1.1.x patch updates
     # Note: No direct upgrade path from 1.1.x to 2.x (requires fresh install)
@@ -329,45 +315,45 @@ clusterGroup:
     # Shared Object Storage Backend
     # Required for RHTPA and QUAY (provides S3-compatible storage via NooBaa MCG)
     # NooBaa MCG provides S3-compatible object storage for multiple applications
-    # noobaa-mcg:
-    #   name: noobaa-mcg
-    #   namespace: openshift-storage
-    #   project: hub
-    #   path: charts/noobaa-mcg
-    #   annotations:
-    #     argocd.argoproj.io/sync-wave: "5"  # Deploy after core services
+    noobaa-mcg:
+      name: noobaa-mcg
+      namespace: openshift-storage
+      project: hub
+      path: charts/noobaa-mcg
+      annotations:
+        argocd.argoproj.io/sync-wave: "5"  # Deploy after core services
     # Quay Container Registry (uses NooBaa for storage)
-    # quay-registry:
-    #   name: quay-registry
-    #   namespace: quay-enterprise
-    #   project: hub
-    #   path: charts/quay-registry
-    #   annotations:
-    #     argocd.argoproj.io/sync-wave: "10"  # Deploy after NooBaa storage backend
+    quay-registry:
+      name: quay-registry
+      namespace: quay-enterprise
+      project: hub
+      path: charts/quay-registry
+      annotations:
+        argocd.argoproj.io/sync-wave: "10"  # Deploy after NooBaa storage backend
     # RHTAS with SPIFFE Integration
     # COMMENTED OUT: Uncomment to enable RHTAS with SPIFFE and Email issuers
     # Depends on: Vault, SPIRE, Keycloak (for Email OIDC issuer if used)
-    # trusted-artifact-signer:
-    #   name: trusted-artifact-signer
-    #   namespace: trusted-artifact-signer
-    #   project: hub
-    #   path: charts/rhtas-operator
-    #   annotations:
-    #     argocd.argoproj.io/sync-wave: "15"  # Deploy after dependencies
-    #   overrides:
-    #     # OIDC Issuer Configuration - Both can be enabled simultaneously
-    #     # Enable SPIFFE issuer for workload identity
-    #     - name: rhtas.zeroTrust.spire.enabled
-    #       value: "true"
-    #     - name: rhtas.zeroTrust.spire.trustDomain
-    #       value: "apps.{{ $.Values.global.clusterDomain }}"
-    #     - name: rhtas.zeroTrust.spire.issuer
-    #       value: "https://spire-spiffe-oidc-discovery-provider.apps.{{ $.Values.global.clusterDomain }}"
-    #     # Enable Keycloak issuer for user/email authentication
-    #     - name: rhtas.zeroTrust.email.enabled
-    #       value: "true"
-    #     - name: rhtas.zeroTrust.email.issuer
-    #       value: https://keycloak.apps.{{ $.Values.global.clusterDomain }}/realms/ztvp
+    trusted-artifact-signer:
+      name: trusted-artifact-signer
+      namespace: trusted-artifact-signer
+      project: hub
+      path: charts/rhtas-operator
+      annotations:
+        argocd.argoproj.io/sync-wave: "15"  # Deploy after dependencies
+      overrides:
+        # OIDC Issuer Configuration - Both can be enabled simultaneously
+        # Enable SPIFFE issuer for workload identity
+        - name: rhtas.zeroTrust.spire.enabled
+          value: "true"
+        - name: rhtas.zeroTrust.spire.trustDomain
+          value: "apps.{{ $.Values.global.clusterDomain }}"
+        - name: rhtas.zeroTrust.spire.issuer
+          value: "https://spire-spiffe-oidc-discovery-provider.apps.{{ $.Values.global.clusterDomain }}"
+        # Enable Keycloak issuer for user/email authentication
+        - name: rhtas.zeroTrust.email.enabled
+          value: "true"
+        - name: rhtas.zeroTrust.email.issuer
+          value: https://keycloak.apps.{{ $.Values.global.clusterDomain }}/realms/ztvp
     # RHTPA (Red Hat Trusted Profile Analyzer) with SPIFFE Integration
     # Depends on: NooBaa MCG (storage), Vault (secrets), SPIRE (identity), Keycloak (auth)
     # trusted-profile-analyzer:
@@ -502,55 +488,6 @@ clusterGroup:
     #      value: quay-admin
     #    - name: registry.passwordVaultKey
     #      value: quay-admin-password
-    #
-    # ACS Central Services (Uncomment to enable)
-    acs-central:
-      name: acs-central-services
-      namespace: stackrox
-      project: hub
-      path: charts/acs-central
-      overrides:
-    # Uncomment and set if you need a specific StorageClass:
-    #    - name: central.persistence.storageClass
-    #      value: gp3-csi # Example for AWS
-        - name: central.exposure.route.enabled
-          value: "true"
-        - name: integration.keycloak.enabled
-          value: "true"
-        - name: integration.keycloak.realm
-          value: "ztvp"
-        - name: integration.keycloak.clientId
-          value: "acs-central"
-    # ACS to scan images stored in Quay (Uncomment to enable)
-    #    - name: integration.quay.enabled
-    #      value: "true"
-    #    - name: integration.quay.url
-    #      value: "quay-quay-enterprise.apps.{{ .Values.global.domain }}"
-      extraValueFiles:
-        - /values-global.yaml
-        - /values-{{ .Values.global.pattern }}-hub.yaml
-      ignoreDifferences:
-        - group: platform.stackrox.io
-          kind: Central
-          jsonPointers:
-            - /spec/scanner/scannerComponent
-      annotations:
-        argocd.argoproj.io/sync-wave: "10"
-
-    # ACS Secured Cluster (Uncomment to enable)
-    acs-secured-cluster:
-      name: acs-secured-cluster
-      namespace: stackrox
-      project: hub
-      path: charts/acs-secured-cluster
-      overrides:
-        - name: clusterName
-          value: hub
-      extraValueFiles:
-        - /values-global.yaml
-        - /values-{{ .Values.global.pattern }}-hub.yaml
-      annotations:
-        argocd.argoproj.io/sync-wave: "15"
   argoCD:
     resourceHealthChecks:
       - check: |
@@ -705,4 +642,3 @@ acmManagedClusters:
   #      cloud: auto-detect
   #      vendor: auto-detect
   #    kubeconfigVaultPath: secret/data/hub/kubeconfig-spoke-2
-
