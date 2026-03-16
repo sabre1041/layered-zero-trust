@@ -15,7 +15,7 @@ logger = logging.getLogger(__loggername__)
 
 
 app_project_name = "zero-trust-workload-identity-manager"
-app_label = "argocd.argoproj.io/instance=zero-trust-workload-identity-manager"
+app_label = "app.kubernetes.io/part-of=zero-trust-workload-identity-manager"
 
 
 @pytest.mark.test_ztwim_project
@@ -93,8 +93,8 @@ def test_ztwim_spire_oidc_discovery_provider(openshift_dyn_client, cluster_apps_
 @pytest.mark.test_ztwim_routes
 def test_ztwim_routes(openshift_dyn_client):
     desired_routes = {
-        "spire-spiffe-oidc-discovery-provider": False,
-        "spire-server": False,
+        "spire-oidc-discovery-provider": False,
+        "spire-server-federation": False,
     }
     app_routes = get_route_by_app_label(
         openshift_dyn_client=openshift_dyn_client,
