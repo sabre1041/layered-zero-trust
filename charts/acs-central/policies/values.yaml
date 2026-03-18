@@ -10,7 +10,7 @@ policies:
     disabled: false
   preventRuntimePrivilegeEscalation:
     disabled: false
-  deployments-should-have-at-least-one-egress-network-policy-as-code:
+  deploymentsShouldHaveAtLeastOneEgressNetworkPolicyAsCode:
     disabled: false
-  deployments-should-have-at-least-one-ingress-network-policy-as-code:
+  deploymentsShouldHaveAtLeastOneIngressNetworkPolicyAsCode:
     disabled: false
