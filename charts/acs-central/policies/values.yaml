@@ -8,3 +8,5 @@ policies:
   # Disabled by default - enable after testing
   stopSuspiciousExec:
     disabled: false
+  preventRuntimePrivilegeEscalation:
+    disabled: false
