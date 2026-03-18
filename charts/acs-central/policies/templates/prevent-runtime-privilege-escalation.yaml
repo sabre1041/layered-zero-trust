@@ -33,16 +33,26 @@ spec:
 
   # Exclude system components that legitimately need privilege
   exclusions:
-    - name: "System Pods"
+    - name: "OpenShift System Namespaces"
       deployment:
         scope:
-          namespace: "openshift-.*|kube-.*|stackrox|default"
-    - name: "Node Management"
+          namespace: "openshift-.*"
+
+    - name: "Kubernetes System Namespaces"
       deployment:
         scope:
-          label:
-            key: "app"
-            value: "node-exporter|machine-config-daemon|collector"
+          namespace: "kube-system|kube-public|kube-node-lease"
+
+    - name: "ACS/RHACS"
+      deployment:
+        scope:
+          namespace: "stackrox|rhacs-operator"
+
+    - name: "Default Namespace"
+      deployment:
+        scope:
+          namespace: "default"
+
 
   policySections:
     - sectionName: "Privilege Escalation Binary Execution"
