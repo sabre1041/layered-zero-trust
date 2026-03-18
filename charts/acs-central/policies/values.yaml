@@ -5,12 +5,14 @@
 
 policies:
   # Custom policy: Stop pods executing suspicious commands (runtime protection)
-  # Disabled by default - enable after testing
   stopSuspiciousExec:
     disabled: false
+  # Custom policy: Stop pods if privileges escalations tools or commands are detected (runtime protection)
   preventRuntimePrivilegeEscalation:
     disabled: false
+  # Custom policy: Show warning about missing egress Netwok Policy (deployment protection)
   deploymentsShouldHaveAtLeastOneEgressNetworkPolicyAsCode:
     disabled: false
+  # Custom policy: Show warning about missing ingress Netwok Policy (deployment protection)
   deploymentsShouldHaveAtLeastOneIngressNetworkPolicyAsCode:
     disabled: false

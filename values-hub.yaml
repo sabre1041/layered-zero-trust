@@ -503,7 +503,7 @@ clusterGroup:
     #    - name: registry.passwordVaultKey
     #      value: quay-admin-password
     #
-    # ACS Central Services (Uncomment to enable)
+    # ACS Central Services
     acs-central:
       name: acs-central-services
       namespace: stackrox
@@ -537,7 +537,7 @@ clusterGroup:
       annotations:
         argocd.argoproj.io/sync-wave: "10"
 
-    # ACS Secured Cluster (Uncomment to enable)
+    # ACS Secured Cluster
     acs-secured-cluster:
       name: acs-secured-cluster
       namespace: stackrox
@@ -551,7 +551,7 @@ clusterGroup:
         - /values-{{ .Values.global.pattern }}-hub.yaml
       annotations:
         argocd.argoproj.io/sync-wave: "15"
-    # ACS Policies (Uncomment to enable)
+    # ACS Policies
     acs-policies:
       name: acs-policies
       namespace: stackrox
