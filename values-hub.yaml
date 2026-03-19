@@ -257,9 +257,8 @@ clusterGroup:
       annotations:
         argocd.argoproj.io/sync-wave: '-30'
       project: hub
-      repoURL: https://github.com/validatedpatterns/ocp-compliance-scanning-chart.git
-      path: .
-      targetRevision: v0.0.1
+      chart: ocp-compliance-scanning
+      chartVersion: 0.0.*
       overrides:
         # Disable unused PVC - compliance operator creates its own PVCs per scan
         # via rawResultStorage in scan-setting.yaml. The explicit PVC causes
@@ -344,9 +343,8 @@ clusterGroup:
     #   name: quay-registry
     #   namespace: quay-enterprise
     #   project: hub
-    #   repoURL: https://github.com/validatedpatterns/quay-chart.git
-    #   path: .
-    #   targetRevision: v0.1.0
+    #   chart: quay
+    #   chartVersion: 0.1.*
     #   annotations:
     #     argocd.argoproj.io/sync-wave: "10"  # Deploy after NooBaa storage backend
     # RHTAS with SPIFFE Integration
@@ -433,9 +431,8 @@ clusterGroup:
       name: rh-keycloak
       namespace: keycloak-system
       project: hub
-      repoURL: https://github.com/validatedpatterns/rhbk-chart.git
-      path: .
-      targetRevision: v0.0.2
+      chart: rhbk
+      chartVersion: 0.0.*
       # SPIFFE Identity Provider is enabled by default in the chart.
       # Override issuer/jwksUrl only if auto-generated values from cluster domain are not suitable.
       # overrides:
@@ -447,16 +444,14 @@ clusterGroup:
       name: rh-cert-manager
       namespace: cert-manager-operator
       project: hub
-      repoURL: https://github.com/validatedpatterns/ocp-certmanager-chart.git
-      path: .
-      targetRevision: v0.2.0
+      chart: ocp-certmanager
+      chartVersion: 0.2.*
     zero-trust-workload-identity-manager:
       name: zero-trust-workload-identity-manager
       namespace: zero-trust-workload-identity-manager
       project: hub
-      repoURL: https://github.com/validatedpatterns/ztwim-chart.git
-      path: .
-      targetRevision: v0.1.0
+      chart: ztwim
+      chartVersion: 0.1.*
       overrides:
         - name: spire.clusterName
           value: hub
