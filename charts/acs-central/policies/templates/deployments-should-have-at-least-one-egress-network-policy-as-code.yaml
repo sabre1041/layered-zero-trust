@@ -44,6 +44,3 @@ spec:
           booleanOperator: OR
           values:
             - value: "false"
-  criteriaLocked: false
-  mitreVectorsLocked: false
-  isDefault: false
