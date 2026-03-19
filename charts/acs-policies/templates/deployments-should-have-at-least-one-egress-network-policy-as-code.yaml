@@ -16,26 +16,8 @@ spec:
   eventSource: NOT_APPLICABLE
   severity: MEDIUM_SEVERITY
 
-  exclusions:
-    - name: "OpenShift System Namespaces"
-      deployment:
-        scope:
-          namespace: "openshift-.*"
-
-    - name: "Kubernetes System Namespaces"
-      deployment:
-        scope:
-          namespace: "kube-system|kube-public|kube-node-lease"
-
-    - name: "ACS/RHACS"
-      deployment:
-        scope:
-          namespace: "stackrox|rhacs-operator"
-
-    - name: "Default Namespace"
-      deployment:
-        scope:
-          namespace: "default"
+  scope:
+    - namespace: "qtodo"
 
   policySections:
     - sectionName: Alert on missing egress Network Policy
