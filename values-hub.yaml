@@ -556,7 +556,7 @@ clusterGroup:
       name: acs-policies
       namespace: stackrox
       project: hub
-      path: charts/acs-central/policies
+      path: charts/acs-policies
       annotations:
         argocd.argoproj.io/sync-wave: "20"
   argoCD:
