@@ -18,6 +18,8 @@ install: operator-deploy post-install ## installs the pattern and loads the secr
 .PHONY: post-install
 post-install: ## Post-install tasks
 	make load-secrets
+	@echo "Waiting for MachineConfigPool rollout to complete..."
+	oc wait mcp/master --for=condition=Updated --timeout=600s
 	make vault-config-jwt
 	@echo "Done"
 
