@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   annotations:
-    argocd.argoproj.io/sync-wave: '20'
+    argocd.argoproj.io/sync-wave: '51'
   labels:
     app: qtodo
     ztvp.io/uses-certificates: "true"

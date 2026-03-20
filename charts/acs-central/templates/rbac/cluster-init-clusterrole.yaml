@@ -5,7 +5,7 @@ metadata:
   labels:
     {{- include "acs-central.labels" . | nindent 4 }}
   annotations:
-    argocd.argoproj.io/sync-wave: "1"
+    argocd.argoproj.io/sync-wave: "32"
 rules:
 - apiGroups: ["console.openshift.io"]
   resources: ["consolelinks"]

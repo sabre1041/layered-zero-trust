@@ -6,7 +6,7 @@ metadata:
   name: {{ include "ztvp-certificates.serviceAccountName" . }}
   namespace: {{ .Values.global.namespace }}
   annotations:
-    argocd.argoproj.io/sync-wave: "-9"
+    argocd.argoproj.io/sync-wave: "22"
   labels:
     {{- include "ztvp-certificates.labels" . | nindent 4 }}
 ---
@@ -16,7 +16,7 @@ metadata:
   name: {{ include "ztvp-certificates.serviceAccountName" . }}
   namespace: {{ .Values.global.namespace }}
   annotations:
-    argocd.argoproj.io/sync-wave: "-9"
+    argocd.argoproj.io/sync-wave: "22"
   labels:
     {{- include "ztvp-certificates.labels" . | nindent 4 }}
 rules:
@@ -30,7 +30,7 @@ metadata:
   name: {{ include "ztvp-certificates.serviceAccountName" . }}
   namespace: {{ .Values.global.namespace }}
   annotations:
-    argocd.argoproj.io/sync-wave: "-9"
+    argocd.argoproj.io/sync-wave: "22"
   labels:
     {{- include "ztvp-certificates.labels" . | nindent 4 }}
 roleRef:
@@ -47,7 +47,7 @@ kind: ClusterRole
 metadata:
   name: {{ include "ztvp-certificates.fullname" . }}-ca-reader
   annotations:
-    argocd.argoproj.io/sync-wave: "-9"
+    argocd.argoproj.io/sync-wave: "22"
   labels:
     {{- include "ztvp-certificates.labels" . | nindent 4 }}
 rules:
@@ -73,7 +73,7 @@ kind: ClusterRoleBinding
 metadata:
   name: {{ include "ztvp-certificates.fullname" . }}-ca-reader
   annotations:
-    argocd.argoproj.io/sync-wave: "-9"
+    argocd.argoproj.io/sync-wave: "22"
   labels:
     {{- include "ztvp-certificates.labels" . | nindent 4 }}
 roleRef:
@@ -91,7 +91,7 @@ kind: ClusterRole
 metadata:
   name: {{ include "ztvp-certificates.fullname" . }}-rollout
   annotations:
-    argocd.argoproj.io/sync-wave: "-9"
+    argocd.argoproj.io/sync-wave: "22"
   labels:
     {{- include "ztvp-certificates.labels" . | nindent 4 }}
 rules:
@@ -105,7 +105,7 @@ kind: ClusterRoleBinding
 metadata:
   name: {{ include "ztvp-certificates.fullname" . }}-rollout
   annotations:
-    argocd.argoproj.io/sync-wave: "-9"
+    argocd.argoproj.io/sync-wave: "22"
   labels:
     {{- include "ztvp-certificates.labels" . | nindent 4 }}
 roleRef:

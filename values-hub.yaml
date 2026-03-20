@@ -33,27 +33,27 @@ clusterGroup:
     #     targetNamespace: openshift-storage
     #     annotations:
     #       openshift.io/cluster-monitoring: "true"
-    #       argocd.argoproj.io/sync-wave: "-5"  # Propagated to OperatorGroup by framework
+    #       argocd.argoproj.io/sync-wave: "26"  # Propagated to OperatorGroup by framework
     # - quay-enterprise:
     #     annotations:
-    #       argocd.argoproj.io/sync-wave: "1"  # Create before NooBaa and all Quay components
+    #       argocd.argoproj.io/sync-wave: "32"  # Create before NooBaa and all Quay components
     #     labels:
     #       openshift.io/cluster-monitoring: "true"
     # RHTAS namespace (required when RHTAS application is enabled)
     # COMMENTED OUT: Uncomment to enable RHTAS with SPIFFE signing
     # - trusted-artifact-signer:
     #     annotations:
-    #       argocd.argoproj.io/sync-wave: "1"  # Auto-created by RHTAS operator
+    #       argocd.argoproj.io/sync-wave: "32"  # Auto-created by RHTAS operator
     #     labels:
     #       openshift.io/cluster-monitoring: "true"
     # - rhtpa-operator:
     #     operatorGroup: true
     #     targetNamespace: rhtpa-operator
     #     annotations:
-    #       argocd.argoproj.io/sync-wave: "-5"  # Create before operator subscription
+    #       argocd.argoproj.io/sync-wave: "26"  # Create before operator subscription
     # - trusted-profile-analyzer:
     #     annotations:
-    #       argocd.argoproj.io/sync-wave: "1"  # Create before RHTPA components
+    #       argocd.argoproj.io/sync-wave: "32"  # Create before RHTPA components
     #     labels:
     #       openshift.io/cluster-monitoring: "true"
     - zero-trust-workload-identity-manager:
@@ -121,13 +121,13 @@ clusterGroup:
     #   namespace: openshift-storage
     #   channel: stable-4.20
     #   annotations:
-    #     argocd.argoproj.io/sync-wave: "-4"  # Install after OperatorGroup (-5)
+    #     argocd.argoproj.io/sync-wave: "27"  # Install after OperatorGroup (26)
     # quay-operator:
     #   name: quay-operator
     #   namespace: openshift-operators
     #   channel: stable-3.15
     #   annotations:
-    #     argocd.argoproj.io/sync-wave: "-3"  # Install after ODF operator
+    #     argocd.argoproj.io/sync-wave: "28"  # Install after ODF operator
     # RHTAS operator subscription (required when RHTAS application is enabled)
     # COMMENTED OUT: Uncomment to enable RHTAS with SPIFFE integration
     # rhtas-operator:
@@ -135,7 +135,7 @@ clusterGroup:
     #   namespace: openshift-operators
     #   channel: stable
     #   annotations:
-    #     argocd.argoproj.io/sync-wave: "-2"  # Install after Quay operator, before applications
+    #     argocd.argoproj.io/sync-wave: "29"  # Install after Quay operator, before applications
     #   catalogSource: redhat-operators
     # RHTPA operator subscription
     # Channel: stable-v1.1 provides latest 1.1.x patch updates
@@ -146,7 +146,7 @@ clusterGroup:
     #   channel: stable-v1.1  # Use stable-v1.1 channel for 1.1.x updates
     #   catalogSource: redhat-operators
     #   annotations:
-    #     argocd.argoproj.io/sync-wave: "-4"  # Install after OperatorGroup (-5), before applications
+    #     argocd.argoproj.io/sync-wave: "27"  # Install after OperatorGroup (26), before applications
   projects:
     - hub
   # Explicitly mention the cluster-state based overrides we plan to use for this pattern.
@@ -176,7 +176,7 @@ clusterGroup:
       project: hub
       path: charts/ztvp-certificates
       annotations:
-        argocd.argoproj.io/sync-wave: "-10"
+        argocd.argoproj.io/sync-wave: "21"
       # Ignore the ACM-replicated policy in local-cluster namespace
       # ACM automatically creates policy replicas with name pattern: <source-ns>.<policy-name>
       ignoreDifferences:
@@ -255,7 +255,7 @@ clusterGroup:
       name: compliance-scanning
       namespace: openshift-compliance
       annotations:
-        argocd.argoproj.io/sync-wave: '-30'
+        argocd.argoproj.io/sync-wave: '1'
       project: hub
       chart: ocp-compliance-scanning
       chartVersion: 0.0.*
@@ -337,7 +337,7 @@ clusterGroup:
     #   project: hub
     #   path: charts/noobaa-mcg
     #   annotations:
-    #     argocd.argoproj.io/sync-wave: "5"  # Deploy after core services
+    #     argocd.argoproj.io/sync-wave: "36"  # Deploy after core services
     # Quay Container Registry (uses NooBaa for storage)
     # quay-registry:
     #   name: quay-registry
@@ -346,7 +346,7 @@ clusterGroup:
     #   chart: quay
     #   chartVersion: 0.1.*
     #   annotations:
-    #     argocd.argoproj.io/sync-wave: "10"  # Deploy after NooBaa storage backend
+    #     argocd.argoproj.io/sync-wave: "41"  # Deploy after NooBaa storage backend
     # RHTAS with SPIFFE Integration
     # COMMENTED OUT: Uncomment to enable RHTAS with SPIFFE and Email issuers
     # Depends on: Vault, SPIRE, Keycloak (for Email OIDC issuer if used)
@@ -356,7 +356,7 @@ clusterGroup:
     #   project: hub
     #   path: charts/rhtas-operator
     #   annotations:
-    #     argocd.argoproj.io/sync-wave: "15"  # Deploy after dependencies
+    #     argocd.argoproj.io/sync-wave: "46"  # Deploy after dependencies
     #   overrides:
     #     # OIDC Issuer Configuration - Both can be enabled simultaneously
     #     # Enable SPIFFE issuer for workload identity
@@ -379,8 +379,8 @@ clusterGroup:
     #   project: hub
     #   path: charts/rhtpa-operator
     #   annotations:
-    #     argocd.argoproj.io/sync-wave: "10"  # Create chart resources (OBC, DB, etc.)
-    #     # Note: The TrustedProfileAnalyzer CR is created by ACM Policy at wave 50
+    #     argocd.argoproj.io/sync-wave: "41"  # Create chart resources (OBC, DB, etc.)
+    #     # Note: The TrustedProfileAnalyzer CR is created by ACM Policy at wave 81
     #     # to ensure the operator is fully ready (mitigates v1.1.0 initialization bug)
     #   # Ignore differences to prevent OutOfSync status
     #   ignoreDifferences:
@@ -541,7 +541,7 @@ clusterGroup:
           jsonPointers:
             - /spec/scanner/scannerComponent
       annotations:
-        argocd.argoproj.io/sync-wave: "10"
+        argocd.argoproj.io/sync-wave: "41"
 
     # ACS Secured Cluster
     acs-secured-cluster:
@@ -556,7 +556,7 @@ clusterGroup:
         - /values-global.yaml
         - /values-{{ .Values.global.pattern }}-hub.yaml
       annotations:
-        argocd.argoproj.io/sync-wave: "15"
+        argocd.argoproj.io/sync-wave: "46"
     # ACS Policies
     acs-policies:
       name: acs-policies
@@ -564,7 +564,7 @@ clusterGroup:
       project: hub
       path: charts/acs-policies
       annotations:
-        argocd.argoproj.io/sync-wave: "20"
+        argocd.argoproj.io/sync-wave: "51"
   argoCD:
     resourceHealthChecks:
       - check: |
