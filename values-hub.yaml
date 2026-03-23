@@ -193,6 +193,7 @@ clusterGroup:
       #   - Automatic rollout restart for consuming applications
       extraValueFiles:
         - /overrides/values-ztvp-certificates.yaml
+        - '/overrides/values-ztvp-certificates-{{ $.Values.global.clusterPlatform }}.yaml'
       overrides:
         # Disable Job TTL to prevent ArgoCD OutOfSync when Kubernetes deletes completed Jobs
         # The initial Job runs once during first sync; CronJob handles ongoing extraction
