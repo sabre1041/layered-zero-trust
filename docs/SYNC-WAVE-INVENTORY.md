@@ -70,6 +70,7 @@ Every sync-wave in the repository, in order. **App** = hub-level Argo CD Applica
 | 46 | └ rhtas-operator | chart | securesign |
 | 48 | supply-chain | **App** | |
 | 49 | └ rhtpa-operator | chart | spiffe-helper-config |
+| 51 | acs-policies | **App** | After ACS Central + Secured Cluster |
 | 51 | └ rhtpa-operator | chart | trusted-profile-analyzer (supporting objects) |
 | 51 | └ qtodo | chart | app-deployment, app-service |
 | 51 | └ supply-chain | chart | workspaces |
@@ -106,12 +107,32 @@ Every sync-wave in the repository, in order. **App** = hub-level Argo CD Applica
 | acs-secured-cluster | 15 | 46 | — |
 | trusted-artifact-signer | 15 | 46 | Deploy after dependencies |
 | supply-chain | — | 48 | After RHTAS/ACS, before chart templates (newly added) |
+| acs-policies | 20 | 51 | After ACS Central + Secured Cluster |
+
+## Application-level waves (`values-coco-dev.yaml`)
+
+The CoCo development configuration reuses several of the same components. Only the active `compliance-scanning` wave differs from the commented-out defaults; other entries are commented out but updated for consistency.
+
+| Application | Old | Current | Comment |
+| --- | ---: | ---: | --- |
+| compliance-scanning | -30 | 1 | Earliest app |
+| openshift-storage (OperatorGroup) | -5 | 26 | Commented; propagated to OperatorGroup |
+| quay-enterprise (namespace) | 1 | 32 | Commented; before NooBaa and Quay components |
+| trusted-artifact-signer (namespace) | 1 | 32 | Commented; auto-created by RHTAS operator |
+| odf (subscription) | -4 | 27 | Commented; after OperatorGroup (26) |
+| quay-operator (subscription) | -3 | 28 | Commented; after ODF operator |
+| rhtas-operator (subscription) | -2 | 29 | Commented; after Quay operator |
+| noobaa-mcg | 5 | 36 | Commented; deploy after core services |
+| quay-registry | 10 | 41 | Commented; deploy after NooBaa |
+| trusted-artifact-signer | 15 | 46 | Commented; deploy after dependencies |
 
 ## Chart-level waves (templates)
 
 These control resource ordering within a single Application's sync. Template waves are resolved locally within each app, not globally across all apps.
 
-### compliance-scanning (`charts/compliance-scanning/templates/`) — App wave: 1
+Charts marked **(external)** have been externalized to standalone repositories managed under [validatedpatterns](https://github.com/validatedpatterns). Their resource-level sync-wave annotations are maintained in those repos, not here. The tables below reflect the +31 offset values that each external chart should carry.
+
+### compliance-scanning — **(external)** `ocp-compliance-scanning-chart` v0.0.3 — App wave: 1
 
 | Resource | Old | Current |
 | --- | ---: | ---: |
@@ -139,14 +160,14 @@ These control resource ordering within a single Application's sync. Template wav
 | noobaa-system.yaml | 2 | 33 |
 | bucket-class.yaml | 3 | 34 |
 
-### keycloak (`charts/keycloak/templates/`) — App wave: 35
+### keycloak — **(external)** `rhbk-chart` v0.0.4 — App wave: 35
 
 | Resource | Old | Current |
 | --- | ---: | ---: |
 | keycloak.yaml | 5 | 36 |
 | keycloak-realm-import.yaml | 10 | 41 |
 
-### quay-registry (`charts/quay-registry/templates/`) — App wave: 41
+### quay-registry — **(external)** `quay-chart` v0.1.3 — App wave: 41
 
 | Resource | Old | Current |
 | --- | ---: | ---: |
@@ -226,7 +247,8 @@ These control resource ordering within a single Application's sync. Template wav
 
 ## Notes
 
-- **"Old"** = value before the +31 offset. **"—"** = no sync-wave existed (defaulted to 0).
+- **"Old"** = value before the +31 offset. **"---"** = no sync-wave existed (defaulted to 0).
 - **"Current"** = value after the +31 offset plus newly added application-level annotations.
 - Template waves are resolved **locally within each app sync**, not globally. A template wave of 32 inside acs-central (app wave 41) does not conflict with a template wave of 32 inside noobaa-mcg (app wave 36); they run independently.
 - Sync waves control **Application creation order**, not readiness. A later wave means the Application resource is submitted to the hub later, but the earlier app's pods may not be fully running yet. For hard readiness gates, use Argo CD health checks or resource hooks.
+- **Externalized charts**: Five charts (certmanager, compliance-scanning, keycloak/RHBK, quay-registry, ZTWIM) are maintained in standalone repositories. Their resource-level sync-wave annotations are managed there and pinned via `chartVersion` in `values-hub.yaml`. Application-level sync-waves remain in this repository.

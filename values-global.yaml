@@ -9,5 +9,4 @@ main:
   clusterGroupName: hub
   multiSourceConfig:
     enabled: true
-    # Pinned version to avoid issues introduced by https://github.com/validatedpatterns/clustergroup-chart/pull/103
-    clusterGroupChartVersion: "0.9.45"
+    clusterGroupChartVersion: "0.9.*"
