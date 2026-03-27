@@ -55,6 +55,7 @@ spec:
           - name: qtodo-truststore-java
             mountPath: /usr/local/bin
 {{- end }}
+{{- if and .Values.app.oidc.enabled (contains "keycloak" (include "qtodo.oidc.url" .)) }}
       - name: wait-for-keycloak
         image: registry.redhat.io/openshift4/ose-tools-rhel9:latest
         imagePullPolicy: IfNotPresent
@@ -63,7 +64,7 @@ spec:
           - -c
           - |
             echo "Waiting for Keycloak OIDC endpoint to be available..."
-            KEYCLOAK_URL="{{ default (printf "https://keycloak.%s/realms/ztvp/.well-known/openid-configuration" .Values.global.localClusterDomain) .Values.app.oidc.authServerUrl }}/.well-known/openid-configuration"
+            KEYCLOAK_URL="{{ include "qtodo.oidc.url" . }}/.well-known/openid-configuration"
             # Remove duplicate .well-known if authServerUrl already contains realm
             KEYCLOAK_URL=$(echo "$KEYCLOAK_URL" | sed 's|/.well-known/openid-configuration/.well-known/openid-configuration|/.well-known/openid-configuration|')
             
@@ -87,6 +88,7 @@ spec:
           - name: ztvp-trusted-ca
             mountPath: /etc/pki/ca-trust/extracted/pem
             readOnly: true
+{{- end }}
       - name: init-spiffe-helper
         image: {{ template "qtodo.image" (dict "value" .Values.app.images.spiffeHelper "context" $) }}
         imagePullPolicy: {{ .Values.app.images.spiffeHelper.pullPolicy }}
@@ -176,7 +178,7 @@ spec:
         - name: CREDENTIALS_FILE
           value: /run/secrets/db-credentials/credentials.properties
         - name: JWT_TOKEN_FILE
-          value: /svids/jwt.token
+          value: {{ .Values.app.oidc.clientAssertion.jwtTokenPath }}
         - name: ZTVP_CA_BUNDLE
           value: /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem
         volumeMounts:
@@ -234,11 +236,11 @@ spec:
 {{- else }}
         - name: QUARKUS_CONFIG_LOCATIONS
           value: file:/run/secrets/db-credentials/credentials.properties
-{{- if not .Values.app.oidc.clientAssertion.enabled }}
+{{- if .Values.app.oidc.clientSecret.enabled }}
         - name: QUARKUS_OIDC_CREDENTIALS_SECRET
           valueFrom:
             secretKeyRef:
-              name: oidc-client-secret
+              name: {{ .Values.app.oidc.clientSecret.name }}
               key: client-secret
 {{- end }}
 {{- if .Values.app.truststore.enabled }}

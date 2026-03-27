@@ -16,3 +16,25 @@ quay.io/ztvp/qtodo) so no VP --set override is needed.
 {{- printf "%s:%s" $name (tpl .value.version .context) -}}
 {{- end -}}
 {{- end -}}
+
+{{/*
+Generate the URL of the OIDC service
+*/}}
+{{- define "qtodo.oidc.url" }}
+{{- if not .Values.app.oidc.authServerUrl }}
+{{- printf "https://keycloak.%s/realms/%s" .Values.global.localClusterDomain .Values.app.oidc.realm }}
+{{- else }}
+{{- print .Values.app.oidc.authServerUrl }}
+{{- end }}
+{{- end }}
+
+{{/*
+Generate the JWT Audience
+*/}}
+{{- define "qtodo.jwt.audience" }}
+{{- if not .Values.app.vault.audience }}
+{{- printf "https://keycloak.%s/realms/%s" .Values.global.localClusterDomain .Values.app.oidc.realm }}
+{{- else }}
+{{- print .Values.app.vault.audience }}
+{{- end }}
+{{- end }}

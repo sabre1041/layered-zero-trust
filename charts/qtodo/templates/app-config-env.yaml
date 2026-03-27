@@ -6,13 +6,13 @@ metadata:
 data:
 {{- if eq .Values.app.spire.enabled true }}
   QUARKUS_OIDC_ENABLED: "true"
-  QUARKUS_OIDC_AUTH_SERVER_URL: "{{ default (printf "https://keycloak.%s/realms/%s" .Values.global.localClusterDomain .Values.app.keycloak.realm) .Values.app.oidc.authServerUrl }}"
+  QUARKUS_OIDC_AUTH_SERVER_URL: "{{ include "qtodo.oidc.url" . }}"
   QUARKUS_OIDC_CLIENT_ID: "{{ .Values.app.oidc.clientId }}"
   QUARKUS_OIDC_APPLICATION_TYPE: "{{ .Values.app.oidc.applicationType }}"
   QUARKUS_HTTP_AUTH_PERMISSION_AUTHENTICATED_PATHS: "{{ .Values.app.oidc.authenticatedPaths }}"
   QUARKUS_HTTP_AUTH_PERMISSION_AUTHENTICATED_POLICY: "{{ .Values.app.oidc.authenticatedPolicy }}"
   QUARKUS_OIDC_AUTHENTICATION_FORCE_REDIRECT_HTTPS_SCHEME: "true"
-{{- if .Values.app.oidc.clientAssertion.enabled }}
+{{- if not .Values.app.oidc.clientSecret.enabled }}
   QUARKUS_OIDC_CREDENTIALS_JWT_SOURCE: "bearer"
   QUARKUS_OIDC_CREDENTIALS_JWT_TOKEN_PATH: "{{ .Values.app.oidc.clientAssertion.jwtTokenPath }}"
 {{- end }}

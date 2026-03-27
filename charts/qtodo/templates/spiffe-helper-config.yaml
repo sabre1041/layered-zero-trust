@@ -1,5 +1,4 @@
 {{- if eq .Values.app.spire.enabled true }}
-{{- $keycloakRealmUrl := default (printf "https://keycloak.%s/realms/%s" .Values.global.localClusterDomain .Values.app.keycloak.realm) .Values.app.keycloak.realmUrl }}
 kind: ConfigMap
 apiVersion: v1
 metadata:
@@ -16,6 +15,6 @@ data:
     svid_file_name = "svid.pem"
     svid_key_file_name = "svid_key.pem"
     svid_bundle_file_name = "svid_bundle.pem"
-    jwt_svids = [{jwt_audience="{{ $keycloakRealmUrl }}", jwt_svid_file_name="jwt.token"}]
+    jwt_svids = [{jwt_audience="{{ include "qtodo.jwt.audience" . }}", jwt_svid_file_name="jwt.token"}]
     jwt_bundle_file_name  = "jwt_bundle.json"
 {{- end }}

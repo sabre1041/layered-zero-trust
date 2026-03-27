@@ -48,7 +48,8 @@ app:
   oidc:
     enabled: false  # Will be enabled when SPIFFE is enabled
     authServerUrl: ""
-    clientId: qtodo-app
+    realm: "ztvp"
+    clientId: "qtodo-app"
     applicationType: "web-app"
     authenticatedPaths: "/*"
     authenticatedPolicy: "authenticated"
@@ -56,6 +57,10 @@ app:
     clientAssertion:
       enabled: true
       jwtTokenPath: "/svids/jwt.token"
+    clientSecret:
+      enabled: false
+      name: "oidc-client-secret"
+      vaultPath: "secret/data/apps/qtodo/qtodo-oidc-client"
 
   # Keycloak realm configuration
   keycloak:
@@ -72,16 +77,10 @@ app:
   vault:
     url: ""
     role: "qtodo"
+    # JWT Audience (auto-generated if not set)
+    # audience: "qtodo"
     # QTodo secrets path (app-level isolation)
     secretPath: "secret/data/apps/qtodo/qtodo-db"
-
-  # OIDC External Secret configuration
-  # Disabled when using federated client assertion (no client secret needed)
-  oidcSecret:
-    enabled: false
-    name: "oidc-client-secret"
-    # QTodo OIDC secret path (app-level isolation)
-    vaultPath: "secret/data/apps/qtodo/qtodo-oidc-client"
 
   # Seed image Job: mirrors the upstream qtodo image into the configured
   # registry so the deployment can pull before the supply-chain pipeline runs.
