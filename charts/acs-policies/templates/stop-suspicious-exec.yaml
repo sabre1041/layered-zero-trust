@@ -1,0 +1,31 @@
+apiVersion: config.stackrox.io/v1alpha1
+kind: SecurityPolicy
+metadata:
+  name: stop-suspicious-exec
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  policyName: "Stop Suspicious Exec"
+  description: "Stops a pod if a suspicious command is executed"
+  remediation: "Review the pod's security context and command execution history."
+  disabled: {{ .Values.policies.stopSuspiciousExec.disabled | default false }}
+  categories:
+    - "Security Best Practices"
+    - "Zero Trust"
+  lifecycleStages:
+    - "RUNTIME"
+  eventSource: "DEPLOYMENT_EVENT"
+  severity: "CRITICAL_SEVERITY"
+  enforcementActions:
+    - "KILL_POD_ENFORCEMENT"
+
+  policySections:
+    - sectionName: "Suspicious Command Execution"
+      policyGroups:
+        - fieldName: "Process Name"
+          booleanOperator: "OR"
+          values:
+            - value: "ncat"
+            - value: "nmap"
+            - value: "curl"
+            - value: "wget"

@@ -66,11 +66,17 @@ clusterGroup:
           openshift.io/cluster-monitoring: "true"
     # Secure Supply Chain: Uncomment to enable OpenShift Pipelines
     # - openshift-pipelines
+    #
+    # Red Hat Advanced Cluster Security (RHACS/StackRox) - Uncomment to enable
+    - stackrox:
+        operatorGroup: true
+        labels:
+          openshift.io/cluster-monitoring: "true"
   subscriptions:
     acm:
       name: advanced-cluster-management
       namespace: open-cluster-management
-      channel: release-2.14
+      channel: release-2.15
       catalogSource: redhat-operators
     cert-manager:
       name: openshift-cert-manager-operator
@@ -84,7 +90,7 @@ clusterGroup:
     rhbk:
       name: rhbk-operator
       namespace: keycloak-system
-      channel: stable-v26.2
+      channel: stable-v26.4
       catalogSource: redhat-marketplace
     zero-trust-workload-identity-manager:
       name: openshift-zero-trust-workload-identity-manager
@@ -99,6 +105,14 @@ clusterGroup:
       config:
         nodeSelector:
           node-role.kubernetes.io/worker: ""
+    #
+    # ACS Operator Subscription (Uncomment to enable)
+    rhacs-operator:
+      name: rhacs-operator
+      namespace: openshift-operators
+      channel: stable
+      source: redhat-operators
+    #
     # Storage and Registry operator subscriptions
     # Required for RHTPA and QUAY (provides NooBaa object storage backend)
     # ODF provides object storage backend (NooBaa) for RHTPA and optionally Quay
@@ -179,6 +193,7 @@ clusterGroup:
       #   - Automatic rollout restart for consuming applications
       extraValueFiles:
         - /overrides/values-ztvp-certificates.yaml
+        - '/overrides/values-ztvp-certificates-{{ $.Values.global.clusterPlatform }}.yaml'
       overrides:
         # Disable Job TTL to prevent ArgoCD OutOfSync when Kubernetes deletes completed Jobs
         # The initial Job runs once during first sync; CronJob handles ongoing extraction
@@ -308,7 +323,7 @@ clusterGroup:
         defaultRole: qtodo
         roles:
           - name: qtodo
-            audience: qtodo
+            audience: https://keycloak.apps.{{ $.Values.global.clusterDomain }}/realms/ztvp
             subject: spiffe://apps.{{ $.Values.global.clusterDomain }}/ns/qtodo/sa/qtodo
             policies:
               - apps-qtodo-jwt-secret
@@ -427,6 +442,13 @@ clusterGroup:
       namespace: keycloak-system
       project: hub
       path: charts/keycloak
+      # SPIFFE Identity Provider is enabled by default in the chart.
+      # Override issuer/jwksUrl only if auto-generated values from cluster domain are not suitable.
+      # overrides:
+        # - name: keycloak.spiffeIdentityProvider.config.config.issuer
+        #   value: "spiffe://apps.example.com"
+        # - name: keycloak.spiffeIdentityProvider.config.config.jwksUrl
+        #   value: "https://spire-spiffe-oidc-discovery-provider.apps.example.com/keys"
     rh-cert-manager:
       name: rh-cert-manager
       namespace: cert-manager-operator
@@ -584,6 +606,63 @@ clusterGroup:
     #     # Enable RHTPA SBOM upload
     #     # - name: rhtpa.enabled
     #     #   value: "true"
+    #
+    # ACS Central Services
+    acs-central:
+      name: acs-central-services
+      namespace: stackrox
+      project: hub
+      path: charts/acs-central
+      overrides:
+    # Uncomment and set if you need a specific StorageClass:
+    #    - name: central.persistence.storageClass
+    #      value: gp3-csi # Example for AWS
+        - name: central.exposure.route.enabled
+          value: "true"
+        - name: integration.keycloak.enabled
+          value: "true"
+        - name: integration.keycloak.realm
+          value: "ztvp"
+        - name: integration.keycloak.clientId
+          value: "acs-central"
+    # ACS to scan images stored in Quay (Uncomment to enable)
+    #    - name: integration.quay.enabled
+    #      value: "true"
+    #    - name: integration.quay.url
+    #      value: "quay-quay-enterprise.apps.{{ .Values.global.domain }}"
+      extraValueFiles:
+        - /values-global.yaml
+        - /values-{{ .Values.global.pattern }}-hub.yaml
+      ignoreDifferences:
+        - group: platform.stackrox.io
+          kind: Central
+          jsonPointers:
+            - /spec/scanner/scannerComponent
+      annotations:
+        argocd.argoproj.io/sync-wave: "10"
+
+    # ACS Secured Cluster
+    acs-secured-cluster:
+      name: acs-secured-cluster
+      namespace: stackrox
+      project: hub
+      path: charts/acs-secured-cluster
+      overrides:
+        - name: clusterName
+          value: hub
+      extraValueFiles:
+        - /values-global.yaml
+        - /values-{{ .Values.global.pattern }}-hub.yaml
+      annotations:
+        argocd.argoproj.io/sync-wave: "15"
+    # ACS Policies
+    acs-policies:
+      name: acs-policies
+      namespace: stackrox
+      project: hub
+      path: charts/acs-policies
+      annotations:
+        argocd.argoproj.io/sync-wave: "20"
   argoCD:
     resourceHealthChecks:
       - check: |

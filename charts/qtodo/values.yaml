@@ -43,16 +43,20 @@ app:
     applicationType: "web-app"
     authenticatedPaths: "/*"
     authenticatedPolicy: "authenticated"
+    # Federated client assertion using SPIFFE JWT SVID
+    clientAssertion:
+      enabled: true
+      jwtTokenPath: "/svids/jwt.token"
 
   # Keycloak realm configuration
   keycloak:
     realm: "ztvp"
+    # Keycloak realm URL (auto-generated from global.localClusterDomain and realm if empty)
+    realmUrl: ""
 
   spire:
     enabled: true   # Enable SPIFFE + OIDC integration by default
     sidecars: true
-    audiences:
-      - qtodo
 
   # Vault configuration for SPIFFE integration
   # Uses SPIFFE JWT to authenticate and fetch DB password
@@ -63,8 +67,9 @@ app:
     secretPath: "secret/data/apps/qtodo/qtodo-db"
 
   # OIDC External Secret configuration
+  # Disabled when using federated client assertion (no client secret needed)
   oidcSecret:
-    enabled: true
+    enabled: false
     name: "oidc-client-secret"
     # QTodo OIDC secret path (app-level isolation)
     vaultPath: "secret/data/apps/qtodo/qtodo-oidc-client"

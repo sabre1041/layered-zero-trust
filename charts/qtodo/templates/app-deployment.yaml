@@ -234,11 +234,13 @@ spec:
 {{- else }}
         - name: QUARKUS_CONFIG_LOCATIONS
           value: file:/run/secrets/db-credentials/credentials.properties
+{{- if not .Values.app.oidc.clientAssertion.enabled }}
         - name: QUARKUS_OIDC_CREDENTIALS_SECRET
           valueFrom:
             secretKeyRef:
               name: oidc-client-secret
               key: client-secret
+{{- end }}
 {{- if .Values.app.truststore.enabled }}
         # Truststore password from Vault secret
         - name: TRUSTSTORE_PASSWORD
@@ -255,6 +257,11 @@ spec:
         volumeMounts:
           - name: db-credentials
             mountPath: /run/secrets/db-credentials
+{{- if .Values.app.oidc.clientAssertion.enabled }}
+          - name: svids
+            mountPath: /svids
+            readOnly: true
+{{- end }}
 {{- if .Values.app.truststore.enabled }}
           - name: truststore
             mountPath: /run/secrets/truststore
