@@ -8,7 +8,7 @@ metadata:
   labels:
     {{- include "rhtpa-operator.labels" . | nindent 4 }}
   annotations:
-    argocd.argoproj.io/sync-wave: "50"  # Increased delay to ensure operator is fully ready
+    argocd.argoproj.io/sync-wave: "81"  # Increased delay to ensure operator is fully ready
     argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
     policy.open-cluster-management.io/standards: NIST SP 800-53
     policy.open-cluster-management.io/categories: CM Configuration Management
@@ -126,7 +126,7 @@ metadata:
   labels:
     {{- include "rhtpa-operator.labels" . | nindent 4 }}
   annotations:
-    argocd.argoproj.io/sync-wave: "20"
+    argocd.argoproj.io/sync-wave: "51"
 placementRef:
   name: placement-policy-rhtpa-trustedprofileanalyzer
   kind: PlacementRule
@@ -144,7 +144,7 @@ metadata:
   labels:
     {{- include "rhtpa-operator.labels" . | nindent 4 }}
   annotations:
-    argocd.argoproj.io/sync-wave: "20"
+    argocd.argoproj.io/sync-wave: "51"
 spec:
   clusterConditions:
     - status: "True"

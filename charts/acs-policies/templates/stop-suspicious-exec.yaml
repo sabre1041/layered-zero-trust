@@ -8,7 +8,9 @@ spec:
   policyName: "Stop Suspicious Exec"
   description: "Stops a pod if a suspicious command is executed"
   remediation: "Review the pod's security context and command execution history."
-  disabled: {{ .Values.policies.stopSuspiciousExec.disabled | default false }}
+  {{- if .Values.policies.stopSuspiciousExec.disabled }}
+  disabled: true
+  {{- end }}
   categories:
     - "Security Best Practices"
     - "Zero Trust"
@@ -19,6 +21,10 @@ spec:
   enforcementActions:
     - "KILL_POD_ENFORCEMENT"
 
+  scope:
+    - label: {}
+      namespace: "qtodo"
+
   policySections:
     - sectionName: "Suspicious Command Execution"
       policyGroups:
@@ -27,5 +33,10 @@ spec:
           values:
             - value: "ncat"
             - value: "nmap"
-            - value: "curl"
-            - value: "wget"
+            - value: "nc"
+            - value: "netcat"
+            # curl and wget removed -- too broadly used by system components
+            # (router, keepalived, prometheus, build tasks) to be kill triggers.
+            # Re-enable only with tight namespace scoping and specific image exclusions.
+            # - value: "curl"
+            # - value: "wget"

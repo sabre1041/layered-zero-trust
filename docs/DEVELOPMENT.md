@@ -63,7 +63,7 @@ If we want to save some space, we can add these overrides to the `noobaa-mcg` co
       project: hub
       path: charts/noobaa-mcg
       annotations:
-        argocd.argoproj.io/sync-wave: "5"
+        argocd.argoproj.io/sync-wave: "36"
       overrides:
         - name: noobaa.dbSize
           value: 10Gi
