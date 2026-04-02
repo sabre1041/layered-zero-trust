@@ -222,7 +222,8 @@ clusterGroup:
       annotations:
         argocd.argoproj.io/sync-wave: '1'
       project: hub
-      path: charts/compliance-scanning
+      chart: ocp-compliance-scanning
+      chartVersion: 0.0.*
     vault:
       name: vault
       namespace: vault
@@ -256,8 +257,9 @@ clusterGroup:
     # quay-registry:
     #   name: quay-registry
     #   namespace: quay-enterprise
-    #   project: hub  
-    #   path: charts/quay-registry
+    #   project: hub
+    #   chart: quay
+    #   chartVersion: 0.1.*
     #   annotations:
     #     argocd.argoproj.io/sync-wave: "41"  # Deploy after NooBaa storage backend
     # RHTAS with SPIFFE Integration
@@ -295,17 +297,20 @@ clusterGroup:
     #   name: rh-keycloak
     #   namespace: keycloak-system
     #   project: hub
-    #   path: charts/keycloak
+    #   chart: rhbk
+    #   chartVersion: 0.0.*
     rh-cert-manager:
       name: rh-cert-manager
       namespace: cert-manager-operator
       project: hub
-      path: charts/certmanager
+      chart: ocp-certmanager
+      chartVersion: 0.2.*
     zero-trust-workload-identity-manager:
       name: zero-trust-workload-identity-manager
       namespace: zero-trust-workload-identity-manager
       project: hub
-      path: charts/zero-trust-workload-identity-manager
+      chart: ztwim
+      chartVersion: 0.1.*
       overrides:
         - name: spire.clusterName
           value: hub
