@@ -4,6 +4,13 @@ global:
   secretStore:
     name: "vault-backend"
     kind: "ClusterSecretStore"
+  registry:
+    enabled: false
+    domain: ""
+    org: ""
+    user: ""
+    vaultPath: ""
+    passwordVaultKey: ""
 
 # QTodo application configuration
 app:
@@ -16,9 +23,11 @@ app:
       pullPolicy: Always
       registry:
         # Set to true to create registry auth secret for image pulls
+        # (also enabled when global.registry.enabled=true)
         auth: false
         secretName: qtodo-registry-auth
-        user: registry-user
+        # Falls back to global.registry.user
+        user: ""
         # domain: registry.example.com  # REQUIRED when auth is enabled
         # Vault path and key for registry password (set for your scenario)
         vaultPath: ""

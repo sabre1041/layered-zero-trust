@@ -11,6 +11,42 @@ spire:
         route.openshift.io/termination: reencrypt
         route.openshift.io/destination-ca-certificate-secret: spire-bundle
 
+# ===========================================================================
+# Global registry configuration (shared by qtodo and supply-chain)
+# Define once here; both charts fall back to global.registry.* when their
+# local registry values are empty.  Per-app overrides still take precedence.
+#
+# The gen-byo-container-registry-variants.py script uncomments the matching
+# OPTION block for each variant.
+# ===========================================================================
+# OPTION 1: Built-in Quay Registry
+# global:
+#   registry:
+#     enabled: true
+#     domain: quay-registry-quay-quay-enterprise.apps.{{ .Values.global.clusterDomain }}
+#     org: ztvp
+#     user: quay-user
+#     vaultPath: "secret/data/hub/infra/quay/quay-users"
+#     passwordVaultKey: "quay-user-password"
+# OPTION 2: BYO/External Registry (quay.io, ghcr.io, etc.)
+# global:
+#   registry:
+#     enabled: true
+#     domain: quay.io
+#     org: your-org
+#     user: your-username
+#     vaultPath: "secret/data/hub/infra/registry/registry-user"
+#     passwordVaultKey: "registry-password"
+# OPTION 3: Embedded OCP Registry
+# global:
+#   registry:
+#     enabled: true
+#     domain: default-route-openshift-image-registry.apps.{{ .Values.global.clusterDomain }}
+#     org: ztvp
+#     user: admin
+#     vaultPath: "secret/data/hub/infra/registry/registry-user"
+#     passwordVaultKey: "registry-password"
+
 clusterGroup:
   name: hub
   isHubCluster: true
@@ -503,61 +539,9 @@ clusterGroup:
           value: qtodo
         - name: app.vault.secretPath
           value: secret/data/apps/qtodo/qtodo-db
-        # ============================================================
-        # Secure Supply Chain: pull pipeline-built image from registry
-        # Uncomment the option matching your supply-chain registry choice.
-        # ============================================================
-        # OPTION 1: Built-in Quay Registry
-        # - name: app.images.main.name
-        #   value: quay-registry-quay-quay-enterprise.apps.{{ $.Values.global.clusterDomain }}/ztvp/qtodo
-        # - name: app.images.main.version
-        #   value: latest
-        # - name: app.images.main.registry.auth
-        #   value: "true"
-        # - name: app.images.main.registry.domain
-        #   value: quay-registry-quay-quay-enterprise.apps.{{ $.Values.global.clusterDomain }}
-        # - name: app.images.main.registry.user
-        #   value: quay-user
-        # - name: app.images.main.registry.vaultPath
-        #   value: "secret/data/hub/infra/quay/quay-users"
-        # - name: app.images.main.registry.passwordVaultKey
-        #   value: "quay-user-password"
-        # ============================================================
-        # OPTION 2: BYO/External Registry
-        # - name: app.images.main.name
-        #   value: quay.io/minzhang/qtodo
-        # - name: app.images.main.version
-        #   value: latest
-        # - name: app.images.main.registry.auth
-        #   value: "true"
-        # - name: app.images.main.registry.domain
-        #   value: quay.io
-        # - name: app.images.main.registry.user
-        #   value: minzhang
-        # - name: app.images.main.registry.vaultPath
-        #   value: "secret/data/hub/infra/registry/registry-user"
-        # - name: app.images.main.registry.passwordVaultKey
-        #   value: "registry-password"
-        # ============================================================
-        # OPTION 3: Embedded OCP Registry
-        # - name: app.images.main.name
-        #   value: default-route-openshift-image-registry.apps.{{ $.Values.global.clusterDomain }}/ztvp/qtodo
-        # - name: app.images.main.version
-        #   value: latest
-        # - name: app.images.main.registry.auth
-        #   value: "true"
-        # - name: app.images.main.registry.domain
-        #   value: default-route-openshift-image-registry.apps.{{ $.Values.global.clusterDomain }}
-        # - name: app.images.main.registry.user
-        #   value: admin
-        # - name: app.images.main.registry.vaultPath
-        #   value: "secret/data/hub/infra/registry/registry-user"
-        # - name: app.images.main.registry.passwordVaultKey
-        #   value: "registry-password"
-        # ============================================================
-        # DEFAULT: No pipeline image (comment out all options above)
-        # qtodo uses the upstream image from the chart's default values.yaml
-        # ============================================================
+        # Secure Supply Chain: when global.registry.enabled=true the chart
+        # automatically derives the image name from global.registry.domain/org.
+        # No override needed here.
     # Secure Supply Chain - Uncomment to enable
     # supply-chain:
     #   name: supply-chain
@@ -570,59 +554,17 @@ clusterGroup:
     #       jqPathExpressions:
     #         - .imagePullSecrets[]|select(.name | contains("-dockercfg-"))
     #   overrides:
-    #     # ============================================================
-    #     # OPTION 1: Built-in Quay Registry (comment out Option 2, uncomment below)
-    #     # Requires: quay-enterprise namespace, quay-operator, quay-registry app
-    #     # ============================================================
+    #     # Registry credentials are inherited from global.registry.
+    #     # Only set app-specific overrides below.
+    #     # Built-in Quay: uncomment to enable the Quay user provisioner CronJob
     #     # - name: quay.enabled
     #     #   value: "true"
-    #     # - name: registry.enabled
-    #     #   value: "true"
-    #     # - name: registry.domain
-    #     #   value: quay-registry-quay-quay-enterprise.apps.{{ $.Values.global.clusterDomain }}
+    #     # Built-in Quay: self-signed certs require TLS verify off
     #     # - name: registry.tlsVerify
     #     #   value: "false"
-    #     # - name: registry.user
-    #     #   value: quay-user
-    #     # - name: registry.vaultPath
-    #     #   value: "secret/data/hub/infra/quay/quay-users"
-    #     # - name: registry.passwordVaultKey
-    #     #   value: "quay-user-password"
-    #     # ============================================================
-    #     # OPTION 2: BYO/External Registry (comment out Option 3, uncomment below)
-    #     # Store token in Vault (hub/infra/registry/registry-user, field registry-password)
-    #     # and in ~/values-secrets.yaml.
-    #     # ============================================================
-    #     # - name: registry.enabled
-    #     #   value: "true"
-    #     # - name: registry.domain
-    #     #   value: quay.io
-    #     # - name: registry.org
-    #     #   value: your-org
-    #     # - name: registry.user
-    #     #   value: your-username
-    #     # - name: registry.vaultPath
-    #     #   value: "secret/data/hub/infra/registry/registry-user"
-    #     # - name: registry.passwordVaultKey
-    #     #   value: "registry-password"
-    #     # ============================================================
-    #     # OPTION 3: Embedded OCP Registry
-    #     # ============================================================
-    #     # - name: registry.enabled
-    #     #   value: "true"
-    #     # - name: registry.domain
-    #     #   value: default-route-openshift-image-registry.apps.{{ $.Values.global.clusterDomain }}
-    #     # - name: registry.org
-    #     #   value: ztvp
-    #     # - name: registry.user
-    #     #   value: admin
-    #     # - name: registry.vaultPath
-    #     #   value: "secret/data/hub/infra/registry/registry-user"
-    #     # - name: registry.passwordVaultKey
-    #     #   value: "registry-password"
+    #     # Embedded OCP: uncomment to create image namespace and grant push RBAC
     #     # - name: registry.embeddedOCP.ensureImageNamespaceRBAC
     #     #   value: "true"
-    #     # ============================================================
     #     # Enable RHTAS signing
     #     # - name: rhtas.enabled
     #     #   value: "true"

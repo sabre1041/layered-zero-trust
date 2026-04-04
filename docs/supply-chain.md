@@ -53,49 +53,44 @@ By default, ZTVP deploys a built-in Red Hat Quay registry. However, you can use 
 
     > **Note**: Never commit `~/values-secrets.yaml` (or your local values-secret file) to git. This file contains sensitive credentials and should remain local.
 
-3. **Set registry configuration in values-hub.yaml**: For the supply-chain application, add these overrides:
+3. **Set the global registry configuration in values-hub.yaml**: Uncomment the matching `global.registry` block at the top of `values-hub.yaml`. All registry credentials are defined once here; both the `supply-chain` and `qtodo` charts inherit them automatically.
 
     ```yaml
-    overrides:
-      - name: registry.enabled
-        value: "true"
-      - name: registry.domain
-        value: "your-registry.example.com"
-      - name: registry.user
-        value: "your-username"
-      - name: registry.org
-        value: "your-org"
-      - name: registry.vaultPath
-        value: "secret/data/hub/infra/registry/registry-user"
-      - name: registry.passwordVaultKey
-        value: "registry-password"
+    # Example: BYO/External Registry (Option 2)
+    global:
+      registry:
+        enabled: true
+        domain: quay.io
+        org: your-org
+        user: your-username
+        vaultPath: "secret/data/hub/infra/registry/registry-user"
+        passwordVaultKey: "registry-password"
     ```
 
-4. **Configure qtodo for custom registry** (if pulling from custom registry):
+    See the **Registry Options** section below for the full set of option blocks.
 
-    ```yaml
-    overrides:
-      - name: app.images.main.registry.auth
-        value: true
-      - name: app.images.main.registry.domain
-        value: "your-registry.example.com"
-      - name: app.images.main.registry.user
-        value: "your-username"
-    ```
+4. **Enable supply-chain-specific overrides** (if needed): The `supply-chain` application may need additional overrides depending on the registry type. These are set in the `supply-chain` overrides section of `values-hub.yaml`:
+
+    * **Built-in Quay**: Enable `quay.enabled` (Quay user provisioner CronJob) and `registry.tlsVerify: "false"` (self-signed certs).
+    * **Embedded OCP**: Enable `registry.embeddedOCP.ensureImageNamespaceRBAC` (creates image namespace and push RBAC).
+    * **BYO/External**: No extra overrides needed.
+
+    > **Note**: The qtodo chart automatically derives its image name from `global.registry.domain` and `global.registry.org` when `global.registry.enabled=true`. No per-app image override is needed.
 
 ### Required Configuration
 
+These parameters are set in the `global.registry` block at the top of `values-hub.yaml`:
+
 | Parameter | Description | Example |
 | --------- | ----------- | ------- |
-| `registry.enabled` | Enable registry auth secret creation | `true` |
-| `registry.domain` | Registry hostname (REQUIRED) | `quay.io`, `ghcr.io`, `registry.example.com` |
-| `registry.org` | Organization/namespace | `my-org` |
-| `registry.repo` | Repository name | `qtodo` |
-| `registry.user` | Registry username | `my-robot-account` |
-| `registry.vaultPath` | Vault path for registry password | `secret/data/hub/infra/registry/registry-user` |
-| `registry.passwordVaultKey` | Key within the Vault secret | `registry-password` |
+| `global.registry.enabled` | Enable registry auth secret creation | `true` |
+| `global.registry.domain` | Registry hostname (REQUIRED) | `quay.io`, `ghcr.io`, `registry.example.com` |
+| `global.registry.org` | Organization/namespace | `my-org` |
+| `global.registry.user` | Registry username | `my-robot-account` |
+| `global.registry.vaultPath` | Vault path for registry password | `secret/data/hub/infra/registry/registry-user` |
+| `global.registry.passwordVaultKey` | Key within the Vault secret | `registry-password` |
 
-> **Note**: All registry types (built-in Quay, BYO, embedded OCP) use the same parameters. Set `registry.domain`, `registry.vaultPath`, and `registry.passwordVaultKey` to the appropriate values for your scenario. See the Vault Paths table below for scenario-specific values.
+> **Note**: All registry types (built-in Quay, BYO, embedded OCP) use the same `global.registry` parameters. Both the `supply-chain` and `qtodo` charts fall back to these values when their local registry values are empty. See the Vault Paths table below for scenario-specific values.
 
 ### Vault Paths
 
@@ -107,7 +102,7 @@ Registry credentials are stored at different paths based on registry type:
 | BYO Registry       | `secret/data/hub/infra/registry/registry-user` | `registry-password`  |
 | Embedded OCP       | `secret/data/hub/infra/registry/registry-user` | `registry-password`  |
 
-Set `registry.vaultPath` and `registry.passwordVaultKey` in your `values-hub.yaml` overrides to match your scenario. When `registry.enabled=false` (default), no registry auth secret is created (fresh install state).
+Set `global.registry.vaultPath` and `global.registry.passwordVaultKey` in the `global.registry` block to match your scenario. When `global.registry.enabled` is false or unset (default), no registry auth secret is created (fresh install state).
 
 The Vault policy `hub-supply-chain-jwt-secret` grants read access to both paths for the pipeline service account.
 
@@ -115,36 +110,31 @@ The Vault policy `hub-supply-chain-jwt-secret` grants read access to both paths 
 
 To use the in-cluster OpenShift image registry instead of an external registry:
 
-1. **Enable `registry.embeddedOCP.ensureImageNamespaceRBAC`** in the supply-chain overrides. The chart will automatically:
-   * Create the image namespace matching `registry.org` (e.g. `ztvp`)
+1. **Uncomment the Option 3 `global.registry` block** in `values-hub.yaml`:
+
+    ```yaml
+    global:
+      registry:
+        enabled: true
+        domain: default-route-openshift-image-registry.apps.{{ .Values.global.clusterDomain }}
+        org: ztvp
+        user: admin
+        vaultPath: "secret/data/hub/infra/registry/registry-user"
+        passwordVaultKey: "registry-password"
+    ```
+
+2. **Enable `registry.embeddedOCP.ensureImageNamespaceRBAC`** in the supply-chain overrides. The chart will automatically:
+   * Create the image namespace matching `global.registry.org` (e.g. `ztvp`)
    * Grant the pipeline ServiceAccount `system:image-builder` in that namespace
    * Enable the default route on the image registry (via a one-time Job)
 
-2. **Set the registry domain** to `default-route-openshift-image-registry.apps.<clusterDomain>`.
+    ```yaml
+    # In the supply-chain application overrides:
+    - name: registry.embeddedOCP.ensureImageNamespaceRBAC
+      value: "true"
+    ```
 
-3. **Set the registry user** to `admin` (or a user with push permissions).
-
-4. **Store the token in Vault**: Use `oc whoami -t` output as the `registry-password` value in `~/values-secrets.yaml`.
-
-Example supply-chain overrides:
-
-```yaml
-overrides:
-  - name: registry.enabled
-    value: "true"
-  - name: registry.domain
-    value: default-route-openshift-image-registry.apps.<clusterDomain>
-  - name: registry.org
-    value: ztvp
-  - name: registry.user
-    value: admin
-  - name: registry.vaultPath
-    value: "secret/data/hub/infra/registry/registry-user"
-  - name: registry.passwordVaultKey
-    value: "registry-password"
-  - name: registry.embeddedOCP.ensureImageNamespaceRBAC
-    value: "true"
-```
+3. **Store the token in Vault**: Use `oc whoami -t` output as the `registry-password` value in `~/values-secrets.yaml`.
 
 ### Node-Level Image Pull Trust
 
@@ -236,10 +226,11 @@ You can also trigger a pipeline run using the Helm template included in the char
 ```shell
 helm template supply-chain charts/supply-chain \
   --set pipelinerun.enabled=true \
-  --set registry.enabled=true \
-  --set registry.domain=quay-registry-quay-quay-enterprise.apps.example.com \
-  --set registry.vaultPath=secret/data/hub/infra/quay/quay-users \
-  --set registry.passwordVaultKey=quay-user-password \
+  --set global.registry.enabled=true \
+  --set global.registry.domain=quay-registry-quay-quay-enterprise.apps.example.com \
+  --set global.registry.org=ztvp \
+  --set global.registry.vaultPath=secret/data/hub/infra/quay/quay-users \
+  --set global.registry.passwordVaultKey=quay-user-password \
   --set global.namespace=layered-zero-trust-hub \
   --show-only templates/pipelinerun-qtodo.yaml | oc create -f -
 ```
@@ -249,10 +240,11 @@ helm template supply-chain charts/supply-chain \
 ```shell
 helm template supply-chain charts/supply-chain \
   --set pipelinerun.enabled=true \
-  --set registry.enabled=true \
-  --set registry.domain=quay.io \
-  --set registry.vaultPath=secret/data/hub/infra/registry/registry-user \
-  --set registry.passwordVaultKey=registry-password \
+  --set global.registry.enabled=true \
+  --set global.registry.domain=quay.io \
+  --set global.registry.org=your-org \
+  --set global.registry.vaultPath=secret/data/hub/infra/registry/registry-user \
+  --set global.registry.passwordVaultKey=registry-password \
   --set global.namespace=layered-zero-trust-hub \
   --show-only templates/pipelinerun-qtodo.yaml | oc create -f -
 ```

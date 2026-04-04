@@ -5,6 +5,13 @@ global:
   secretStore:
     name: "vault-backend"
     kind: "ClusterSecretStore"
+  registry:
+    enabled: false
+    domain: ""
+    org: ""
+    user: ""
+    vaultPath: ""
+    passwordVaultKey: ""
 
 rhtas:
   enabled: false
@@ -63,14 +70,14 @@ registry:
   enabled: false
   # Registry hostname (REQUIRED when enabled)
   domain: ""
-  # Organization/namespace within the registry
-  org: "ztvp"
+  # Organization/namespace within the registry (falls back to global.registry.org)
+  org: ""
   # Repository name
   repo: "qtodo"
   # Whether to verify TLS when pushing to the registry
   tlsVerify: "true"
-  # Registry username
-  user: "registry-user"
+  # Registry username (falls back to global.registry.user)
+  user: ""
   # Vault path to the secret containing the registry password
   vaultPath: ""
   # Key within the Vault secret that holds the password

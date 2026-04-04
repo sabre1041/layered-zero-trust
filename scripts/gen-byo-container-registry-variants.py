@@ -11,15 +11,19 @@ and produces up to 3 variants with the chosen registry option enabled:
 Each variant also enables the common supply-chain stack (OpenShift Pipelines,
 ODF, NooBaa, RHTAS, RHTPA, and their namespaces/subscriptions/vault roles).
 
+Registry credentials are centralized in a single `global.registry` block at
+the top of values-hub.yaml.  Both the supply-chain and qtodo charts fall back
+to `global.registry.*` when their local registry values are empty.
+
 Usage:
   # Generate all 3 variants under /tmp
-  python3 scripts/gen-byo-container-registry-options.py
+  python3 scripts/gen-byo-container-registry-variants.py
 
   # Generate a single variant
-  python3 scripts/gen-byo-container-registry-options.py --option 2
+  python3 scripts/gen-byo-container-registry-variants.py --option 2
 
   # Custom base file and output directory
-  python3 scripts/gen-byo-container-registry-options.py \\
+  python3 scripts/gen-byo-container-registry-variants.py \\
       --base my-values-hub.yaml --outdir /tmp/variants
 """
 
@@ -86,6 +90,140 @@ def _uncomment_until_sentinel(lines, trigger_re, sentinel_re, prev_re=None):
         new.append(lines[i])
         i += 1
     return new
+
+
+# ---------------------------------------------------------------------------
+# Global registry block
+# ---------------------------------------------------------------------------
+def enable_global_registry(lines, option_num):
+    """Uncomment the global.registry block for the selected option.
+
+    The base file contains three commented blocks:
+        # OPTION 1: Built-in Quay Registry
+        # global:
+        #   registry:
+        #     ...
+        # OPTION 2: ...
+        # global:
+        #   registry:
+        #     ...
+        # OPTION 3: ...
+        # global:
+        #   registry:
+        #     ...
+
+    This function uncomments only the block matching option_num.
+    """
+    target_header = f"# OPTION {option_num}:"
+    result = []
+    i = 0
+    while i < len(lines):
+        line = lines[i]
+
+        if re.search(re.escape(target_header), line):
+            result.append(line)
+            i += 1
+            while i < len(lines):
+                if re.match(r"^# OPTION \d+:", lines[i]):
+                    break
+                if re.match(r"^$", lines[i]):
+                    break
+                if re.match(r"^[^#]", lines[i]):
+                    break
+                result.append(uncomment_line(lines[i]))
+                i += 1
+            continue
+
+        result.append(line)
+        i += 1
+    return result
+
+
+# ---------------------------------------------------------------------------
+# Supply-chain app enabler
+# ---------------------------------------------------------------------------
+def enable_supply_chain_app(lines, option_num):
+    """Enable the supply-chain app and its option-specific overrides.
+
+    Pass 1: strip one comment layer from all supply-chain block lines.
+    Pass 2: selectively uncomment option-specific and common overrides.
+    """
+    # --- Pass 1: strip outer comment from all supply-chain lines ----------
+    pass1 = []
+    in_block = False
+    block_start = -1
+    block_end = -1
+
+    for idx, line in enumerate(lines):
+        if re.search(r"# Secure Supply Chain - Uncomment to enable", line):
+            in_block = True
+            block_start = idx + 1
+            pass1.append(line)
+            continue
+        if in_block and re.match(r"^\s{4}#\s*$", line):
+            in_block = False
+            block_end = idx
+            pass1.append(line)
+            continue
+        if in_block:
+            pass1.append(uncomment_line(line))
+        else:
+            pass1.append(line)
+
+    if block_start < 0:
+        return pass1
+
+    # --- Pass 2: selectively uncomment option overrides -------------------
+    final = []
+    for idx, line in enumerate(pass1):
+        if not (block_start <= idx < block_end):
+            final.append(line)
+            continue
+
+        stripped = line.lstrip()
+        if not stripped.startswith("#"):
+            final.append(line)
+            continue
+
+        # Always uncomment RHTAS and RHTPA flags
+        if re.search(r"# - name: rhtas\.enabled", line) or re.search(
+            r"# - name: rhtpa\.enabled", line
+        ):
+            final.append(uncomment_line(line))
+            continue
+        if re.search(r"#\s+value:", line) and final:
+            prev = final[-1]
+            if "rhtas.enabled" in prev or "rhtpa.enabled" in prev:
+                final.append(uncomment_line(line))
+                continue
+
+        # Option 1 (Built-in Quay): uncomment quay.enabled and tlsVerify
+        if option_num == 1:
+            if re.search(r"# - name: quay\.enabled", line) or re.search(
+                r"# - name: registry\.tlsVerify", line
+            ):
+                final.append(uncomment_line(line))
+                continue
+            if re.search(r"#\s+value:", line) and final:
+                prev = final[-1]
+                if "quay.enabled" in prev or "registry.tlsVerify" in prev:
+                    final.append(uncomment_line(line))
+                    continue
+
+        # Option 3 (Embedded OCP): uncomment ensureImageNamespaceRBAC
+        if option_num == 3:
+            if re.search(r"# - name: registry\.embeddedOCP", line):
+                final.append(uncomment_line(line))
+                continue
+            if re.search(r"#\s+value:", line) and final:
+                prev = final[-1]
+                if "embeddedOCP" in prev:
+                    final.append(uncomment_line(line))
+                    continue
+
+        final.append(line)
+
+    return final
 
 
 # ---------------------------------------------------------------------------
@@ -305,145 +443,6 @@ def enable_image_pull_trust(lines, hostname):
     return result
 
 
-def enable_qtodo_option(lines, option_num):
-    """Uncomment the specified qtodo registry option (1, 2, or 3)."""
-    option_header = f"OPTION {option_num}:"
-    result = []
-    i = 0
-    in_qtodo_options = False
-
-    while i < len(lines):
-        line = lines[i]
-
-        if re.search(r"# Secure Supply Chain: pull pipeline-built image", line):
-            in_qtodo_options = True
-            result.append(line)
-            i += 1
-            continue
-
-        if in_qtodo_options and re.search(r"# DEFAULT: No pipeline image", line):
-            in_qtodo_options = False
-            result.append(line)
-            i += 1
-            continue
-
-        if in_qtodo_options and re.search(f"# {re.escape(option_header)}", line):
-            result.append(line)
-            i += 1
-            while i < len(lines):
-                line = lines[i]
-                if re.search(r"# ====", line):
-                    result.append(line)
-                    i += 1
-                    break
-                result.append(uncomment_line(line))
-                i += 1
-            continue
-
-        result.append(line)
-        i += 1
-    return result
-
-
-def enable_supply_chain_option(lines, option_num):
-    """Enable the supply-chain app with the specified registry option.
-
-    Two-pass approach:
-      Pass 1 - Remove the outer structural comment layer from every line
-               in the supply-chain block. Single-commented structural lines
-               become bare YAML; double-commented option lines become
-               single-commented.
-      Pass 2 - Within the now-single-commented option lines, uncomment the
-               selected option's overrides and the common RHTAS/RHTPA flags.
-    """
-    option_header = f"OPTION {option_num}:"
-    option_any_re = re.compile(r"OPTION\s+\d+:")
-
-    # --- Pass 1: strip outer comment from all supply-chain lines ----------
-    pass1 = []
-    in_block = False
-    block_start = -1
-    block_end = -1
-
-    for idx, line in enumerate(lines):
-        if re.search(r"# Secure Supply Chain - Uncomment to enable", line):
-            in_block = True
-            block_start = idx + 1
-            pass1.append(line)
-            continue
-        if in_block and re.match(r"^\s{4}#\s*$", line):
-            in_block = False
-            block_end = idx
-            pass1.append(line)
-            continue
-        if in_block:
-            pass1.append(uncomment_line(line))
-        else:
-            pass1.append(line)
-
-    if block_start < 0:
-        return pass1
-
-    # --- Pass 2: selectively uncomment option overrides -------------------
-    final = []
-    in_target_option = False
-    past_header = False
-
-    for idx, line in enumerate(pass1):
-        if not (block_start <= idx < block_end):
-            final.append(line)
-            continue
-
-        stripped = line.lstrip()
-        if not stripped.startswith("#"):
-            final.append(line)
-            continue
-
-        # Detect OPTION headers
-        if re.search(option_header, line):
-            in_target_option = True
-            past_header = False
-            final.append(line)
-            continue
-        if option_any_re.search(line) and not re.search(option_header, line):
-            in_target_option = False
-            past_header = False
-            final.append(line)
-            continue
-
-        is_separator = bool(re.search(r"# ====", line))
-
-        if is_separator:
-            if in_target_option and not past_header:
-                past_header = True
-            elif in_target_option and past_header:
-                in_target_option = False
-            final.append(line)
-            continue
-
-        # Selected option overrides
-        if in_target_option and past_header:
-            final.append(uncomment_line(line))
-            continue
-
-        # Common overrides after all option blocks (RHTAS / RHTPA)
-        if not in_target_option and (
-            re.search(r"# - name: rhtas\.enabled", line)
-            or re.search(r"# - name: rhtpa\.enabled", line)
-        ):
-            final.append(uncomment_line(line))
-            continue
-
-        if not in_target_option and re.search(r"#\s+value:", line):
-            if final and ("rhtas.enabled" in final[-1] or "rhtpa.enabled" in final[-1]):
-                final.append(uncomment_line(line))
-                continue
-
-        final.append(line)
-
-    return final
-
-
 # ---------------------------------------------------------------------------
 # Top-level generator
 # ---------------------------------------------------------------------------
@@ -459,6 +458,8 @@ def generate_variant(base_path, option_num, output_path):
         lines = fh.readlines()
 
     lines = apply_common_supply_chain(lines)
+    lines = enable_global_registry(lines, option_num)
+    lines = enable_supply_chain_app(lines, option_num)
 
     if option_num == 1:
         lines = enable_quay_namespace_and_sub(lines)
@@ -474,9 +475,6 @@ def generate_variant(base_path, option_num, output_path):
             "default-route-openshift-image-registry.apps."
             "{{ $.Values.global.clusterDomain }}",
         )
-
-    lines = enable_qtodo_option(lines, option_num)
-    lines = enable_supply_chain_option(lines, option_num)
 
     with open(output_path, "w") as fh:
         fh.writelines(lines)
