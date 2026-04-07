@@ -28,67 +28,64 @@ By default, ZTVP deploys a built-in Red Hat Quay registry. However, you can use 
 
 1. **Disable built-in Quay registry** (optional - if not using Quay): Comment out the Quay-related applications in `values-hub.yaml`: `quay-enterprise` namespace, `quay-operator` subscription, and `quay-registry` application.
 
-2. **Configure registry credentials in Vault**: Per VP rule, add your registry credentials to `~/values-secrets.yaml` (or `~/values-secret.yaml` / `~/values-secret-layered-zero-trust.yaml` per VP lookup order):
+2. **Configure registry credentials in Vault** (**BYO registry only**): Per VP rule, add your registry credentials to `~/values-secrets.yaml` (or `~/values-secret.yaml` / `~/values-secret-layered-zero-trust.yaml` per VP lookup order):
 
-    ```bash
-    # Copy template to local file if not already done
-    cp values-secret.yaml.template ~/values-secrets.yaml
-    ```
+   ```bash
+   # Copy template to local file if not already done
+   cp values-secret.yaml.template ~/values-secrets.yaml
+   ```
 
-    Add the registry-user secret (same format for **BYO external registry** and **embedded OCP registry**):
+   Uncomment the `registry-user` secret and replace the placeholder with your registry token or password:
 
-    ```yaml
-    - name: registry-user
-      vaultPrefixes:
-      - hub/infra/registry
-      fields:
-      - name: registry-password
-        value: "REPLACE_WITH_REGISTRY_TOKEN"
-        onMissingValue: error
-    ```
+   ```yaml
+   - name: registry-user
+     vaultPrefixes:
+       - hub/infra/registry
+     fields:
+       - name: registry-password
+         value: "REPLACE_WITH_REGISTRY_TOKEN"
+         onMissingValue: error
+   ```
 
-    Replace `REPLACE_WITH_REGISTRY_TOKEN` with:
-    * **Embedded OCP registry:** Not required when the automatic token refresher is enabled (see [Embedded OCP Registry](#embedded-ocp-registry)). If the token refresher is disabled, use the output of `oc whoami -t` (after `oc login`).
-    * **External registry (BYO):** your registry token or password (e.g. quay.io, ghcr.io).
-
-    > **Note**: Never commit `~/values-secrets.yaml` (or your local values-secret file) to git. This file contains sensitive credentials and should remain local.
+   > **Note**: This secret is only required for **BYO/external registries** (Option 2). **Built-in Quay** (Option 1) uses the auto-generated `quay-users` secret. **Embedded OCP registry** (Option 3) does not need a manual secret when the automatic token refresher is enabled (see [Embedded OCP Registry](#embedded-ocp-registry)) -- the refresher creates and rotates the Vault credential automatically.
+   >
+   > **Note**: Never commit `~/values-secrets.yaml` (or your local values-secret file) to git. This file contains sensitive credentials and should remain local.
 
 3. **Set the global registry configuration in values-hub.yaml**: Uncomment the matching `global.registry` block at the top of `values-hub.yaml`. All registry credentials are defined once here; both the `supply-chain` and `qtodo` charts inherit them automatically.
 
-    ```yaml
-    # Example: BYO/External Registry (Option 2)
-    global:
-      registry:
-        enabled: true
-        domain: quay.io
-        org: your-org
-        user: your-username
-        vaultPath: "secret/data/hub/infra/registry/registry-user"
-        passwordVaultKey: "registry-password"
-    ```
+   ```yaml
+   # Example: BYO/External Registry (Option 2)
+   global:
+     registry:
+       enabled: true
+       domain: quay.io
+       org: your-org
+       user: your-username
+       vaultPath: "secret/data/hub/infra/registry/registry-user"
+       passwordVaultKey: "registry-password"
+   ```
 
-    See the **Registry Options** section at the top of `values-hub.yaml` for the full set of option blocks (built-in Quay, BYO, embedded OCP).
+   See the **Registry Options** section at the top of `values-hub.yaml` for the full set of option blocks (built-in Quay, BYO, embedded OCP).
 
 4. **Enable supply-chain-specific overrides** (if needed): The `supply-chain` application may need additional overrides depending on the registry type. These are set in the `supply-chain` overrides section of `values-hub.yaml`:
+   * **Built-in Quay**: Enable `quay.enabled` (Quay user provisioner CronJob) and `registry.tlsVerify: "false"` (self-signed certs).
+   * **Embedded OCP**: Enable `registry.embeddedOCP.ensureImageNamespaceRBAC` (creates image namespace and push RBAC) and optionally `registry.embeddedOCP.tokenRefresher.enabled` (see [Embedded OCP Registry](#embedded-ocp-registry)).
+   * **BYO/External**: No extra overrides needed.
 
-    * **Built-in Quay**: Enable `quay.enabled` (Quay user provisioner CronJob) and `registry.tlsVerify: "false"` (self-signed certs).
-    * **Embedded OCP**: Enable `registry.embeddedOCP.ensureImageNamespaceRBAC` (creates image namespace and push RBAC) and optionally `registry.embeddedOCP.tokenRefresher.enabled` (see [Embedded OCP Registry](#embedded-ocp-registry)).
-    * **BYO/External**: No extra overrides needed.
-
-    > **Note**: The qtodo chart automatically derives its image name from `global.registry.domain` and `global.registry.org` when `global.registry.enabled=true`. No per-app image override is needed.
+   > **Note**: The qtodo chart automatically derives its image name from `global.registry.domain` and `global.registry.org` when `global.registry.enabled=true`. No per-app image override is needed.
 
 ### Required Configuration
 
 These parameters are set in the `global.registry` block at the top of `values-hub.yaml`:
 
-| Parameter | Description | Example |
-| --------- | ----------- | ------- |
-| `global.registry.enabled` | Enable registry auth secret creation | `true` |
-| `global.registry.domain` | Registry hostname (REQUIRED) | `quay.io`, `ghcr.io`, `registry.example.com` |
-| `global.registry.org` | Organization/namespace | `my-org` |
-| `global.registry.user` | Registry username | `my-robot-account` |
-| `global.registry.vaultPath` | Vault path for registry password | `secret/data/hub/infra/registry/registry-user` |
-| `global.registry.passwordVaultKey` | Key within the Vault secret | `registry-password` |
+| Parameter                          | Description                          | Example                                        |
+| ---------------------------------- | ------------------------------------ | ---------------------------------------------- |
+| `global.registry.enabled`          | Enable registry auth secret creation | `true`                                         |
+| `global.registry.domain`           | Registry hostname (REQUIRED)         | `quay.io`, `ghcr.io`, `registry.example.com`   |
+| `global.registry.org`              | Organization/namespace               | `my-org`                                       |
+| `global.registry.user`             | Registry username                    | `my-robot-account`                             |
+| `global.registry.vaultPath`        | Vault path for registry password     | `secret/data/hub/infra/registry/registry-user` |
+| `global.registry.passwordVaultKey` | Key within the Vault secret          | `registry-password`                            |
 
 > **Note**: All registry types (built-in Quay, BYO, embedded OCP) use the same `global.registry` parameters. Both the `supply-chain` and `qtodo` charts fall back to these values when their local registry values are empty. See the Vault Paths table below for scenario-specific values.
 
@@ -96,11 +93,11 @@ These parameters are set in the `global.registry` block at the top of `values-hu
 
 Registry credentials are stored at different paths based on registry type:
 
-| Registry Type      | Vault Path                                     | Password Key         |
-| ------------------ | ---------------------------------------------- | -------------------- |
-| Built-in Quay      | `secret/data/hub/infra/quay/quay-users`        | `quay-user-password` |
-| BYO Registry       | `secret/data/hub/infra/registry/registry-user` | `registry-password`  |
-| Embedded OCP       | `secret/data/hub/infra/registry/registry-user` | `registry-password`  |
+| Registry Type | Vault Path                                     | Password Key         |
+| ------------- | ---------------------------------------------- | -------------------- |
+| Built-in Quay | `secret/data/hub/infra/quay/quay-users`        | `quay-user-password` |
+| BYO Registry  | `secret/data/hub/infra/registry/registry-user` | `registry-password`  |
+| Embedded OCP  | `secret/data/hub/infra/registry/registry-user` | `registry-password`  |
 
 Set `global.registry.vaultPath` and `global.registry.passwordVaultKey` in the `global.registry` block to match your scenario. When `global.registry.enabled` is false or unset (default), no registry auth secret is created (fresh install state).
 
@@ -112,16 +109,16 @@ To use the in-cluster OpenShift image registry instead of an external registry:
 
 1. **Uncomment the Option 3 `global.registry` block** in `values-hub.yaml` so `global.registry` points at the embedded registry (domain, org, vault paths). Use `user: _token` when using automatic token refresh (bearer tokens; the username is not significant to the registry).
 
-    ```yaml
-    global:
-      registry:
-        enabled: true
-        domain: default-route-openshift-image-registry.apps.{{ .Values.global.clusterDomain }}
-        org: ztvp
-        user: _token
-        vaultPath: "secret/data/hub/infra/registry/registry-user"
-        passwordVaultKey: "registry-password"
-    ```
+   ```yaml
+   global:
+     registry:
+       enabled: true
+       domain: default-route-openshift-image-registry.apps.{{ .Values.global.clusterDomain }}
+       org: ztvp
+       user: _token
+       vaultPath: "secret/data/hub/infra/registry/registry-user"
+       passwordVaultKey: "registry-password"
+   ```
 
 2. **Enable `registry.embeddedOCP.ensureImageNamespaceRBAC`** in the supply-chain overrides. The chart will automatically:
    * Create the image namespace matching `global.registry.org` (e.g. `ztvp`)
@@ -164,10 +161,10 @@ The `ztvp-certificates` application handles this by patching `image.config.opens
 
 Set `<registry-hostname>` to match your registry option:
 
-| Option | Registry Hostname |
-| ------ | ----------------- |
-| Option 1: Built-in Quay | `quay-registry-quay-quay-enterprise.apps.<clusterDomain>` |
-| Option 3: Embedded OCP | `default-route-openshift-image-registry.apps.<clusterDomain>` |
+| Option                  | Registry Hostname                                             |
+| ----------------------- | ------------------------------------------------------------- |
+| Option 1: Built-in Quay | `quay-registry-quay-quay-enterprise.apps.<clusterDomain>`     |
+| Option 3: Embedded OCP  | `default-route-openshift-image-registry.apps.<clusterDomain>` |
 
 > **Note**: Option 2 (BYO/External Registry) does not require `imagePullTrust` because external registries like quay.io and ghcr.io use publicly trusted certificates.
 
@@ -186,12 +183,11 @@ ZTVP will create a `Pipeline` in our cluster called **qtodo-supply-chain** that 
 3. Locate the **qtodo-supply-chain** pipeline. It's within the **layered-zero-trust-hub** project.
 4. In the kebab menu (three vertical dots) from the right-hand, select **Start**.
 
-    Review the configurable parameters. Most parameters should be correct with their default values if we are in single-cluster mode. But, double-check their values just in case.
+   Review the configurable parameters. Most parameters should be correct with their default values if we are in single-cluster mode. But, double-check their values just in case.
 
-    At the bottom we have the **workspaces**. These must be configured manually.
-
-    * For **qtodo-source**, select `PersistentVolumeClaim` and the PVC name is `qtodo-workspace-source`.
-    * For **registry-auth-config**, select `Secret` and the name of the secret is `qtodo-registry-auth`.
+   At the bottom we have the **workspaces**. These must be configured manually.
+   * For **qtodo-source**, select `PersistentVolumeClaim` and the PVC name is `qtodo-workspace-source`.
+   * For **registry-auth-config**, select `Secret` and the name of the secret is `qtodo-registry-auth`.
 
 5. Press **Start** to finish and run the pipeline.
 
@@ -213,12 +209,12 @@ spec:
   timeouts:
     pipeline: 1h0m0s
   workspaces:
-  - name: qtodo-source
-    persistentVolumeClaim:
-      claimName: qtodo-workspace-source
-  - name: registry-auth-config
-    secret:
-      secretName: qtodo-registry-auth
+    - name: qtodo-source
+      persistentVolumeClaim:
+        claimName: qtodo-workspace-source
+    - name: registry-auth-config
+      secret:
+        secretName: qtodo-registry-auth
 ```
 
 As was described previously, verify the values associated with the PVC storage and registry configuration.
@@ -294,7 +290,7 @@ The pipeline we have prepared has the following steps:
 * **qtodo-sign-image**. Signs the container image.
 * **qtodo-generate-sbom**. Generates an SBOM from the image.
 * **qtodo-sbom-attestation**. Creates a (signed) attestation, and attaches it to the image.
-* **qtodo-upload-sbom**. Uploads the generated SBOM file  to RHTPA.
+* **qtodo-upload-sbom**. Uploads the generated SBOM file to RHTPA.
 * **qtodo-verify-image**. Verifies the attestation and the signature attached to the image.
 
 ### Inspecting the results
@@ -389,18 +385,18 @@ The credentials to access the Quay web interface can be obtained as follows:
 
 * Quay URL
 
-    ```shell
-    echo "https://$(oc get route -n quay-enterprise \
-        -l quay-component=quay-app-route \
-        -o jsonpath='{.items[0].spec.host}')"
-    ```
+  ```shell
+  echo "https://$(oc get route -n quay-enterprise \
+      -l quay-component=quay-app-route \
+      -o jsonpath='{.items[0].spec.host}')"
+  ```
 
 * Quay username: The same one you specified in `values-hub.yaml` or **quay-user**.
 * Quay password:
 
-    ```shell
-    oc get secret -n layered-zero-trust-hub qtodo-quay-password -o json | jq '.data["password"] | @base64d'
-    ```
+  ```shell
+  oc get secret -n layered-zero-trust-hub qtodo-quay-password -o json | jq '.data["password"] | @base64d'
+  ```
 
 Now that we have the credentials, we can check the content in Quay.
 
@@ -429,19 +425,19 @@ The RHTPA web UI uses OIDC for user authentication. If you are using the **Keycl
 
 * RHTPA URL
 
-    ```shell
-    echo "https://$(oc get route -n trusted-profile-analyzer \
-        -l app.kubernetes.io/name=server \
-        -o jsonpath='{.items[0].spec.host}')"
-    ```
+  ```shell
+  echo "https://$(oc get route -n trusted-profile-analyzer \
+      -l app.kubernetes.io/name=server \
+      -o jsonpath='{.items[0].spec.host}')"
+  ```
 
 * RHTPA user: **rhtpa-user**
 * RHTPA user password
 
-    ```shell
-    oc get secret keycloak-users -n keycloak-system -o json \
-        | jq '.data["rhtpa-user-password"] | @base64d'
-    ```
+  ```shell
+  oc get secret keycloak-users -n keycloak-system -o json \
+      | jq '.data["rhtpa-user-password"] | @base64d'
+  ```
 
 To review our SBOM within the RHTPA web UI:
 
