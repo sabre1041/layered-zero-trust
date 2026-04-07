@@ -351,7 +351,7 @@ def apply_common_supply_chain(lines):
             r"#\s+- hub-infra-rhtpa-jwt-secret",
             r"#\s+- name: supply-chain\s*$",
             r"#\s+audience: supply-chain",
-            r"#\s+subject: spiffe://.*ns/pipeline",
+            r"#\s+subject: spiffe://.*sa/pipeline",
             r"#\s+- hub-supply-chain-jwt-secret",
         ],
     )
@@ -434,10 +434,12 @@ def enable_image_pull_trust(lines, hostname):
             result.append(uncomment_line(line))
         elif re.search(r"# - name: imagePullTrust\.registries\[0\]", line):
             result.append(uncomment_line(line))
-        elif re.search(r"#\s+value: <registry-hostname>", line):
-            result.append(
-                line.replace("# ", "").replace("<registry-hostname>", hostname)
-            )
+        elif (
+            re.search(r"#\s+value:", line)
+            and result
+            and "imagePullTrust.registries" in result[-1]
+        ):
+            result.append(re.sub(r"#\s+value:.*", f"  value: {hostname}", line))
         else:
             result.append(line)
     return result
