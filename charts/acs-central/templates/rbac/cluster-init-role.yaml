@@ -40,4 +40,6 @@ rules:
       - deployments
     verbs:
       - get
+      - list
+      - watch
       - patch
