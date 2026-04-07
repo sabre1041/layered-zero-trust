@@ -43,7 +43,7 @@ spire:
 #     enabled: true
 #     domain: default-route-openshift-image-registry.apps.{{ .Values.global.clusterDomain }}
 #     org: ztvp
-#     user: admin
+#     user: _token
 #     vaultPath: "secret/data/hub/infra/registry/registry-user"
 #     passwordVaultKey: "registry-password"
 
@@ -263,11 +263,11 @@ clusterGroup:
         # Node-level image pull trust for kubelet
         # Required when pulling images from registries behind the cluster ingress
         # (e.g. built-in Quay, embedded OCP registry). Patches image.config.openshift.io/cluster.
-        # Uncomment and set the registry hostname when enabling a registry option.
+        # Uncomment and set the registry hostname when enabling Option 1 (Quay) or Option 3 (embedded OCP).
         # - name: imagePullTrust.enabled
         #   value: "true"
         # - name: imagePullTrust.registries[0]
-        #   value: <registry-hostname>
+        #   value: default-route-openshift-image-registry.apps.{{ $.Values.global.clusterDomain }}
         
         # Note: additionalCertificates (complex nested array) temporarily disabled
         # Need to find proper way to pass complex structures in Validated Patterns
@@ -354,7 +354,7 @@ clusterGroup:
               capabilities = ["read"]
             }
             path "secret/data/hub/infra/registry/*" {
-              capabilities = ["read"]
+              capabilities = ["read", "create", "update"]
             }
             path "secret/data/hub/infra/rhtpa/rhtpa-oidc-cli" {
               capabilities = ["read"]
@@ -376,10 +376,10 @@ clusterGroup:
           #   subject: spiffe://apps.{{ $.Values.global.clusterDomain }}/ns/trusted-profile-analyzer/sa/rhtpa
           #   policies:
           #     - hub-infra-rhtpa-jwt-secret
-          # Supply chain vault role (for Tekton pipelines)
+          # Supply chain vault role (for Tekton pipelines; enable with supply-chain app / Option 3 or BYO registry)
           # - name: supply-chain
           #   audience: supply-chain
-          #   subject: spiffe://apps.{{ $.Values.global.clusterDomain }}/ns/pipeline/sa/pipeline
+          #   subject: spiffe://apps.{{ $.Values.global.clusterDomain }}/ns/{{ $.Values.global.pattern }}-hub/sa/pipeline
           #   policies:
           #     - hub-supply-chain-jwt-secret
     # Shared Object Storage Backend
@@ -542,35 +542,38 @@ clusterGroup:
         # Secure Supply Chain: when global.registry.enabled=true the chart
         # automatically derives the image name from global.registry.domain/org.
         # No override needed here.
-    # Secure Supply Chain - Uncomment to enable
+    # Secure Supply Chain - Uncomment to enable (required for Option 1, 2, or 3 registry flows in docs)
     # supply-chain:
-    #   name: supply-chain
-    #   project: hub
-    #   path: charts/supply-chain
-    #   annotations:
-    #     argocd.argoproj.io/sync-wave: "48"
-    #   ignoreDifferences:
-    #     - kind: ServiceAccount
-    #       jqPathExpressions:
-    #         - .imagePullSecrets[]|select(.name | contains("-dockercfg-"))
-    #   overrides:
-    #     # Registry credentials are inherited from global.registry.
-    #     # Only set app-specific overrides below.
-    #     # Built-in Quay: uncomment to enable the Quay user provisioner CronJob
-    #     # - name: quay.enabled
-    #     #   value: "true"
-    #     # Built-in Quay: self-signed certs require TLS verify off
-    #     # - name: registry.tlsVerify
-    #     #   value: "false"
-    #     # Embedded OCP: uncomment to create image namespace and grant push RBAC
-    #     # - name: registry.embeddedOCP.ensureImageNamespaceRBAC
-    #     #   value: "true"
-    #     # Enable RHTAS signing
-    #     # - name: rhtas.enabled
-    #     #   value: "true"
-    #     # Enable RHTPA SBOM upload
-    #     # - name: rhtpa.enabled
-    #     #   value: "true"
+    #  name: supply-chain
+    #  project: hub
+    #  path: charts/supply-chain
+    #  annotations:
+    #    argocd.argoproj.io/sync-wave: "48"
+    #  ignoreDifferences:
+    #    - kind: ServiceAccount
+    #      jqPathExpressions:
+    #        - .imagePullSecrets[]|select(.name | contains("-dockercfg-"))
+    #  overrides:
+    #    # Registry credentials are inherited from global.registry.
+    #    # Only set app-specific overrides below.
+    #    # Built-in Quay: uncomment to enable the Quay user provisioner CronJob
+    #    # - name: quay.enabled
+    #    #   value: "true"
+    #    # Built-in Quay: self-signed certs require TLS verify off
+    #    # - name: registry.tlsVerify
+    #    #   value: "false"
+    #    # Embedded OCP (Option 3): create image namespace and grant push RBAC
+    #    # - name: registry.embeddedOCP.ensureImageNamespaceRBAC
+    #    #   value: "true"
+    #    # Embedded OCP (Option 3): periodically refresh pipeline SA token in Vault
+    #    # - name: registry.embeddedOCP.tokenRefresher.enabled
+    #    #   value: "true"
+    #    # Enable RHTAS signing
+    #    # - name: rhtas.enabled
+    #    #   value: "true"
+    #    # Enable RHTPA SBOM upload
+    #    # - name: rhtpa.enabled
+    #    #   value: "true"
     #
     # ACS Central Services
     acs-central:

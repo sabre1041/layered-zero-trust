@@ -89,6 +89,11 @@ registry:
   # using the in-cluster OpenShift image registry; leave false for other registries.
   embeddedOCP:
     ensureImageNamespaceRBAC: false
+    tokenRefresher:
+      enabled: false
+      image: registry.access.redhat.com/ubi9/ubi:9.7-1764794285
+      schedule: "0 */6 * * *"
+      tokenDuration: "172800"
 
 # pipeline run configuration
 pipelinerun:

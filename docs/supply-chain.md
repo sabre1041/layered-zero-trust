@@ -48,7 +48,7 @@ By default, ZTVP deploys a built-in Red Hat Quay registry. However, you can use 
     ```
 
     Replace `REPLACE_WITH_REGISTRY_TOKEN` with:
-    * **Embedded OCP registry:** output of `oc whoami -t` (after `oc login`).
+    * **Embedded OCP registry:** Not required when the automatic token refresher is enabled (see [Embedded OCP Registry](#embedded-ocp-registry)). If the token refresher is disabled, use the output of `oc whoami -t` (after `oc login`).
     * **External registry (BYO):** your registry token or password (e.g. quay.io, ghcr.io).
 
     > **Note**: Never commit `~/values-secrets.yaml` (or your local values-secret file) to git. This file contains sensitive credentials and should remain local.
@@ -67,12 +67,12 @@ By default, ZTVP deploys a built-in Red Hat Quay registry. However, you can use 
         passwordVaultKey: "registry-password"
     ```
 
-    See the **Registry Options** section below for the full set of option blocks.
+    See the **Registry Options** section at the top of `values-hub.yaml` for the full set of option blocks (built-in Quay, BYO, embedded OCP).
 
 4. **Enable supply-chain-specific overrides** (if needed): The `supply-chain` application may need additional overrides depending on the registry type. These are set in the `supply-chain` overrides section of `values-hub.yaml`:
 
     * **Built-in Quay**: Enable `quay.enabled` (Quay user provisioner CronJob) and `registry.tlsVerify: "false"` (self-signed certs).
-    * **Embedded OCP**: Enable `registry.embeddedOCP.ensureImageNamespaceRBAC` (creates image namespace and push RBAC).
+    * **Embedded OCP**: Enable `registry.embeddedOCP.ensureImageNamespaceRBAC` (creates image namespace and push RBAC) and optionally `registry.embeddedOCP.tokenRefresher.enabled` (see [Embedded OCP Registry](#embedded-ocp-registry)).
     * **BYO/External**: No extra overrides needed.
 
     > **Note**: The qtodo chart automatically derives its image name from `global.registry.domain` and `global.registry.org` when `global.registry.enabled=true`. No per-app image override is needed.
@@ -104,13 +104,13 @@ Registry credentials are stored at different paths based on registry type:
 
 Set `global.registry.vaultPath` and `global.registry.passwordVaultKey` in the `global.registry` block to match your scenario. When `global.registry.enabled` is false or unset (default), no registry auth secret is created (fresh install state).
 
-The Vault policy `hub-supply-chain-jwt-secret` grants read access to both paths for the pipeline service account.
+The Vault policy `hub-supply-chain-jwt-secret` grants read access to both paths for the pipeline service account. For the embedded OCP registry, the policy also grants `create` and `update` capabilities on the registry path so the automatic token refresher can write fresh tokens back to Vault.
 
 ### Embedded OCP Registry
 
 To use the in-cluster OpenShift image registry instead of an external registry:
 
-1. **Uncomment the Option 3 `global.registry` block** in `values-hub.yaml`:
+1. **Uncomment the Option 3 `global.registry` block** in `values-hub.yaml` so `global.registry` points at the embedded registry (domain, org, vault paths). Use `user: _token` when using automatic token refresh (bearer tokens; the username is not significant to the registry).
 
     ```yaml
     global:
@@ -118,7 +118,7 @@ To use the in-cluster OpenShift image registry instead of an external registry:
         enabled: true
         domain: default-route-openshift-image-registry.apps.{{ .Values.global.clusterDomain }}
         org: ztvp
-        user: admin
+        user: _token
         vaultPath: "secret/data/hub/infra/registry/registry-user"
         passwordVaultKey: "registry-password"
     ```
@@ -128,13 +128,25 @@ To use the in-cluster OpenShift image registry instead of an external registry:
    * Grant the pipeline ServiceAccount `system:image-builder` in that namespace
    * Enable the default route on the image registry (via a one-time Job)
 
-    ```yaml
-    # In the supply-chain application overrides:
-    - name: registry.embeddedOCP.ensureImageNamespaceRBAC
-      value: "true"
-    ```
+3. **Confirm the registry domain** is `default-route-openshift-image-registry.apps.<clusterDomain>` (set in `global.registry.domain` above).
 
-3. **Store the token in Vault**: Use `oc whoami -t` output as the `registry-password` value in `~/values-secrets.yaml`.
+4. **Enable automatic token refresh** (recommended): Set `registry.embeddedOCP.tokenRefresher.enabled` to `true`. This deploys:
+   * A **CronJob** (`registry-token-refresher`) that runs every 6 hours. It uses a SPIFFE JWT to authenticate to Vault, creates a fresh `pipeline` ServiceAccount token via the Kubernetes TokenRequest API, and writes it to Vault.
+   * A one-shot **Sync hook Job** (`registry-token-refresher-seed`) that seeds the initial token on first deploy so the pipeline is ready immediately.
+
+   When the token refresher is enabled, you do **not** need to manually store a token in `~/values-secrets.yaml` for the embedded OCP registry. The refresher handles credential lifecycle automatically.
+
+   If you prefer manual token management instead, disable the token refresher and store the output of `oc whoami -t` as the `registry-password` value in `~/values-secrets.yaml`.
+
+Example `supply-chain` application overrides for embedded OCP (registry host, org, and Vault paths are normally taken from the `global.registry` block):
+
+```yaml
+overrides:
+  - name: registry.embeddedOCP.ensureImageNamespaceRBAC
+    value: "true"
+  - name: registry.embeddedOCP.tokenRefresher.enabled
+    value: "true"
+```
 
 ### Node-Level Image Pull Trust
 
