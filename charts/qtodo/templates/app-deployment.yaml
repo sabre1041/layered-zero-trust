@@ -125,7 +125,7 @@ spec:
           - name: CREDENTIALS_FILE
             value: /run/secrets/db-credentials/credentials.properties
           - name: JWT_TOKEN_FILE
-            value: /svids/jwt.token
+            value: {{ .Values.app.oidc.clientAssertion.jwtTokenPath }}
           - name: ZTVP_CA_BUNDLE
             value: /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem
         volumeMounts:

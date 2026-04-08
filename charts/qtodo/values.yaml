@@ -62,12 +62,6 @@ app:
       name: "oidc-client-secret"
       vaultPath: "secret/data/apps/qtodo/qtodo-oidc-client"
 
-  # Keycloak realm configuration
-  keycloak:
-    realm: "ztvp"
-    # Keycloak realm URL (auto-generated from global.localClusterDomain and realm if empty)
-    realmUrl: ""
-
   spire:
     enabled: true   # Enable SPIFFE + OIDC integration by default
     sidecars: true
@@ -78,7 +72,7 @@ app:
     url: ""
     role: "qtodo"
     # JWT Audience (auto-generated if not set)
-    # audience: "qtodo"
+    # audience: "api://client-id"
     # QTodo secrets path (app-level isolation)
     secretPath: "secret/data/apps/qtodo/qtodo-db"
 

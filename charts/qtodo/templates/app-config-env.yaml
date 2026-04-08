@@ -12,7 +12,7 @@ data:
   QUARKUS_HTTP_AUTH_PERMISSION_AUTHENTICATED_PATHS: "{{ .Values.app.oidc.authenticatedPaths }}"
   QUARKUS_HTTP_AUTH_PERMISSION_AUTHENTICATED_POLICY: "{{ .Values.app.oidc.authenticatedPolicy }}"
   QUARKUS_OIDC_AUTHENTICATION_FORCE_REDIRECT_HTTPS_SCHEME: "true"
-{{- if not .Values.app.oidc.clientSecret.enabled }}
+{{- if and .Values.app.oidc.clientAssertion.enabled (not .Values.app.oidc.clientSecret.enabled) }}
   QUARKUS_OIDC_CREDENTIALS_JWT_SOURCE: "bearer"
   QUARKUS_OIDC_CREDENTIALS_JWT_TOKEN_PATH: "{{ .Values.app.oidc.clientAssertion.jwtTokenPath }}"
 {{- end }}
