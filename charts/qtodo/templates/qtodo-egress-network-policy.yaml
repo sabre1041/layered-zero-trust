@@ -1,0 +1,46 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: qtodo-egress
+  namespace: {{ .Release.Namespace }}
+spec:
+  podSelector:
+    matchLabels:
+      app: qtodo
+  policyTypes:
+  - Egress
+  egress:
+  # NOTE: OVN-Kubernetes evaluates egress NetworkPolicy before DNAT, meaning the packet
+  # destination is always the service ClusterIP — a virtual IP not owned by any pod.
+  # namespaceSelector/podSelector cannot match ClusterIPs, so egress rules are port-restricted
+  # only (no 'to:' destination). Zero-trust enforcement on the destination side is achieved
+  # via ingress NetworkPolicies on the receiving namespaces (evaluated after DNAT against
+  # real pod IPs, which work correctly). This approach is portable across all OCP environments.
+
+  # DNS resolution (port 53 UDP+TCP — CoreDNS ClusterIP in openshift-dns)
+  - ports:
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53
+
+  # PostgreSQL — qtodo-db service (port 5432)
+  - ports:
+    - protocol: TCP
+      port: 5432
+
+  # Vault API — SPIFFE JWT auth for DB credentials (port 8200)
+  - ports:
+    - protocol: TCP
+      port: 8200
+
+  # Keycloak OIDC — internal service URL (port 8443)
+  - ports:
+    - protocol: TCP
+      port: 8443
+
+  # Keycloak OIDC — external route for token exchange, current auth-server-url uses
+  # the cluster *.apps hostname which resolves to the external load balancer (port 443)
+  - ports:
+    - protocol: TCP
+      port: 443
