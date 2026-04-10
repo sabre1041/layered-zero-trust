@@ -1,0 +1,35 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: qtodo-db-network-policy
+  namespace: qtodo
+spec:
+  podSelector:
+    matchLabels:
+      app: qtodo-db
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  # PostgreSQL access restricted to qtodo app pods only.
+  # Ingress NetworkPolicy is evaluated after DNAT (against real pod source IPs),
+  # so podSelector correctly restricts access to only qtodo pods.
+  - ports:
+    - protocol: TCP
+      port: 5432
+    from:
+    - podSelector:
+        matchLabels:
+          app: qtodo
+  # Allow DNS responses from CoreDNS pods — same reason as qtodo-ingress-network-policy.
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: openshift-dns
+  egress:
+  # DNS resolution only (port-only rule — see qtodo-egress-network-policy for explanation)
+  - ports:
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53
