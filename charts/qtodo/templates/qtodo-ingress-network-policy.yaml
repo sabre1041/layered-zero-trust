@@ -1,7 +1,7 @@
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: allow-from-openshift-ingress
+  name: qtodo-network-policy
   namespace: {{ .Release.Namespace }}
 spec:
   podSelector:
@@ -9,17 +9,32 @@ spec:
       app: qtodo
   policyTypes:
   - Ingress
+  - Egress
   ingress:
-  # Allow all ingress traffic.
-  #
-  # OVN-Kubernetes limitation: when an egress NetworkPolicy is applied to a pod,
-  # OVN-K stops using conntrack bypass for ingress response packets. DNS responses
-  # (from the DNS ClusterIP via DNAT) and other ClusterIP service responses are then
-  # subject to strict ingress NP evaluation. Since these response source IPs cannot
-  # be matched portably via namespaceSelector/podSelector, allow-all ingress is required.
-  #
-  # This policy satisfies the ACS "Has Ingress Network Policy" compliance check.
-  # Zero-trust security is enforced via:
-  #   - Egress NetworkPolicy (qtodo-egress): restricts what qtodo can initiate
-  #   - Keycloak OIDC authentication: enforced on all application paths (/*)
+  # Allow all ingress — required for DNS/ClusterIP responses to reach the pod.
+  # OVN-Kubernetes disrupts DNS DNAT/SNAT when NetworkPolicy ACLs are active.
+  # Application security enforced via Keycloak OIDC on all paths.
   - {}
+  egress:
+  # DNS resolution (port 53 UDP+TCP)
+  - ports:
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53
+  # PostgreSQL — qtodo-db service (port 5432)
+  - ports:
+    - protocol: TCP
+      port: 5432
+  # Vault API — SPIFFE JWT auth for DB credentials (port 8200)
+  - ports:
+    - protocol: TCP
+      port: 8200
+  # Keycloak OIDC — internal service (port 8443)
+  - ports:
+    - protocol: TCP
+      port: 8443
+  # Keycloak OIDC — external route via cluster load balancer (port 443)
+  - ports:
+    - protocol: TCP
+      port: 443
