@@ -33,8 +33,8 @@ global:
   registry:
     enabled: true
     domain: quay.io
-    org: your-org
-    user: your-username
+    org: ablock
+    user: ablock+qtodo
     vaultPath: "secret/data/hub/infra/registry/registry-user"
     passwordVaultKey: "registry-password"
 # OPTION 3: Embedded OCP Registry
