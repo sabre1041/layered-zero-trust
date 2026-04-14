@@ -25,7 +25,7 @@ vault_curl() {
   fi
 }
 
-log "Starting OCP registry token refresh"
+log "Starting OpenShift registry token refresh"
 
 # 1. Read SPIFFE JWT for Vault authentication
 if [ ! -f "${JWT_TOKEN_FILE}" ]; then
@@ -35,17 +35,36 @@ fi
 JWT="$(cat "${JWT_TOKEN_FILE}")"
 log "Read SPIFFE JWT from ${JWT_TOKEN_FILE}"
 
-# 2. Authenticate to Vault using SPIFFE JWT
-log "Authenticating to Vault at ${VAULT_URL} with role ${VAULT_ROLE}..."
-AUTH_RESP=$(vault_curl -X POST "${VAULT_URL}/v1/auth/jwt/login" \
-  -H "Content-Type: application/json" \
-  -d "{\"role\":\"${VAULT_ROLE}\",\"jwt\":\"${JWT}\"}")
+# 2. Authenticate to Vault using SPIFFE JWT (with retry for seed Job timing)
+VAULT_MAX_RETRIES="${VAULT_MAX_RETRIES:-20}"
+VAULT_RETRY_INTERVAL="${VAULT_RETRY_INTERVAL:-15}"
+VAULT_TOKEN=""
 
-VAULT_TOKEN=$(echo "${AUTH_RESP}" | python3 -c "import sys,json; print(json.load(sys.stdin)['auth']['client_token'])" 2>/dev/null) || {
-  log "ERROR: Vault authentication failed"
+log "Authenticating to Vault at ${VAULT_URL} with role ${VAULT_ROLE}..."
+attempt=0
+while [ "${attempt}" -lt "${VAULT_MAX_RETRIES}" ]; do
+  AUTH_RESP=$(vault_curl -X POST "${VAULT_URL}/v1/auth/jwt/login" \
+    -H "Content-Type: application/json" \
+    -d "{\"role\":\"${VAULT_ROLE}\",\"jwt\":\"${JWT}\"}" 2>&1) || true
+
+  VAULT_TOKEN=$(echo "${AUTH_RESP}" | python3 -c "import sys,json; print(json.load(sys.stdin)['auth']['client_token'])" 2>/dev/null) || true
+
+  if [ -n "${VAULT_TOKEN}" ]; then
+    break
+  fi
+
+  attempt=$((attempt + 1))
+  if [ "${attempt}" -lt "${VAULT_MAX_RETRIES}" ]; then
+    log "Vault not ready (attempt ${attempt}/${VAULT_MAX_RETRIES}). Retrying in ${VAULT_RETRY_INTERVAL}s..."
+    sleep "${VAULT_RETRY_INTERVAL}"
+  fi
+done
+
+if [ -z "${VAULT_TOKEN}" ]; then
+  log "ERROR: Vault authentication failed after ${VAULT_MAX_RETRIES} attempts"
   log "${AUTH_RESP}"
   exit 1
-}
+fi
 log "Vault authentication successful"
 
 # 3. Create a fresh SA token via the Kubernetes TokenRequest API

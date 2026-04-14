@@ -1,13 +1,14 @@
 {{/*
 Create the image path for the passed in image field.
-For the main app image (isMain=true), when global.registry is enabled the
-name is derived from global.registry.domain/org so no values-hub override
-is needed (VP overrides don't support template expressions).
+When global.registry is enabled with domain and repository, the image
+reference is derived from global.registry.domain/repository (e.g.
+quay.io/ztvp/qtodo) so no VP --set override is needed.
 */}}
 {{- define "qtodo.image" -}}
 {{- $name := tpl .value.name .context -}}
-{{- if and (.isMain) .context.Values.global.registry.enabled .context.Values.global.registry.domain .context.Values.global.registry.org -}}
-{{- $name = printf "%s/%s/qtodo" (tpl .context.Values.global.registry.domain .context) .context.Values.global.registry.org -}}
+{{- $useRegistry := default false .useRegistry -}}
+{{- if and $useRegistry .context.Values.global.registry.enabled .context.Values.global.registry.domain .context.Values.global.registry.repository -}}
+{{- $name = printf "%s/%s" (tpl .context.Values.global.registry.domain .context) .context.Values.global.registry.repository -}}
 {{- end -}}
 {{- if eq (substr 0 7 (tpl .value.version .context)) "sha256:" -}}
 {{- printf "%s@%s" $name (tpl .value.version .context) -}}

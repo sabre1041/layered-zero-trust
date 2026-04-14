@@ -1,12 +1,15 @@
-{{- if and (index .Values.registry "embeddedOCP") (index .Values.registry.embeddedOCP "ensureImageNamespaceRBAC") }}
-# When using the embedded OCP image registry, the pipeline pushes to a namespace
-# that matches registry.org (e.g. ztvp). This ensures that namespace exists and
-# the pipeline SA has system:image-builder so the push succeeds (transparent to the user).
+{{- if and (index .Values.registry "embeddedOpenShift") (index .Values.registry.embeddedOpenShift "ensureImageNamespaceRBAC") }}
+{{- $repository := .Values.registry.repository | default .Values.global.registry.repository }}
+{{- $imageNamespace := index (splitList "/" $repository) 0 }}
+# When using the embedded OpenShift image registry, the pipeline pushes to a
+# namespace that matches the first path component of registry.repository
+# (e.g. "ztvp" from "ztvp/qtodo"). This ensures that namespace exists and the
+# pipeline SA has system:image-builder so the push succeeds.
 ---
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: {{ .Values.registry.org | default .Values.global.registry.org }}
+  name: {{ $imageNamespace }}
   annotations:
     argocd.argoproj.io/sync-wave: "0"
 ---
@@ -14,7 +17,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   name: pipeline-image-builder
-  namespace: {{ .Values.registry.org | default .Values.global.registry.org }}
+  namespace: {{ $imageNamespace }}
   annotations:
     argocd.argoproj.io/sync-wave: "0"
 roleRef:
@@ -23,17 +26,17 @@ roleRef:
   name: system:image-builder
 subjects:
   - kind: ServiceAccount
-    name: pipeline
+    name: {{ .Values.pipelineServiceAccount }}
     namespace: {{ .Values.global.namespace }}
 ---
-# Enable the default route on the embedded OCP image registry so that
+# Enable the default route on the embedded OpenShift image registry so that
 # the pipeline can push and external clients can pull images via the route.
 # Uses a Job because the imageregistry config is a cluster-singleton managed
 # by the image-registry operator; declarative ownership would conflict.
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: registry-route-enabler
+  name: {{ .Values.registry.embeddedOpenShift.routeEnablerServiceAccount }}
   namespace: {{ .Values.global.namespace }}
   annotations:
     argocd.argoproj.io/sync-wave: "0"
@@ -61,7 +64,7 @@ roleRef:
   name: {{ .Values.global.namespace }}-registry-route-enabler
 subjects:
 - kind: ServiceAccount
-  name: registry-route-enabler
+  name: {{ .Values.registry.embeddedOpenShift.routeEnablerServiceAccount }}
   namespace: {{ .Values.global.namespace }}
 ---
 apiVersion: batch/v1
@@ -77,11 +80,11 @@ spec:
   backoffLimit: 3
   template:
     spec:
-      serviceAccountName: registry-route-enabler
+      serviceAccountName: {{ .Values.registry.embeddedOpenShift.routeEnablerServiceAccount }}
       restartPolicy: Never
       containers:
       - name: enable-route
-        image: registry.access.redhat.com/ubi9/ubi:9.7-1764794285
+        image: {{ .Values.images.ubi }}
         command:
         - /bin/sh
         - -ce
@@ -101,7 +104,7 @@ spec:
             *'"defaultRoute":true'*) echo "Default route already enabled, nothing to do."; exit 0 ;;
           esac
 
-          echo "Enabling default route on embedded OCP image registry..."
+          echo "Enabling default route on embedded OpenShift image registry..."
           RESP=$(curl -sS -w "\n%{http_code}" --cacert "${CACERT}" \
             -H "${AUTH_HEADER}" \
             -H "Content-Type: application/merge-patch+json" \

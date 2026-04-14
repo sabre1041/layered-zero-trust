@@ -1,11 +1,11 @@
-{{- if and (index .Values.registry "embeddedOCP") (index .Values.registry.embeddedOCP "tokenRefresher") (index .Values.registry.embeddedOCP.tokenRefresher "enabled") }}
+{{- if and (index .Values.registry "embeddedOpenShift") (index .Values.registry.embeddedOpenShift "tokenRefresher") (index .Values.registry.embeddedOpenShift.tokenRefresher "enabled") }}
 {{- $regVaultPath := .Values.registry.vaultPath | default .Values.global.registry.vaultPath }}
 {{- $regPasswordKey := .Values.registry.passwordVaultKey | default .Values.global.registry.passwordVaultKey }}
 # ============================================================
-# OCP Registry Token Refresher
+# OpenShift Registry Token Refresher
 # Periodically creates a fresh pipeline SA token and writes it
 # to Vault so the ExternalSecret-based dockerconfigjson stays
-# valid for the embedded OCP image registry.
+# valid for the embedded OpenShift image registry.
 # ============================================================
 ---
 apiVersion: v1
@@ -43,7 +43,7 @@ metadata:
 rules:
 - apiGroups: [""]
   resources: ["serviceaccounts/token"]
-  resourceNames: ["pipeline"]
+  resourceNames: [{{ .Values.pipelineServiceAccount | quote }}]
   verbs: ["create"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
@@ -57,7 +57,7 @@ roleRef:
   name: registry-token-refresher
 subjects:
 - kind: ServiceAccount
-  name: pipeline
+  name: {{ .Values.pipelineServiceAccount }}
   namespace: {{ .Values.global.namespace }}
 ---
 apiVersion: batch/v1
@@ -66,18 +66,18 @@ metadata:
   name: registry-token-refresher
   namespace: {{ .Values.global.namespace }}
 spec:
-  schedule: {{ .Values.registry.embeddedOCP.tokenRefresher.schedule | quote }}
+  schedule: {{ .Values.registry.embeddedOpenShift.tokenRefresher.schedule | quote }}
   concurrencyPolicy: Forbid
   jobTemplate:
     spec:
       backoffLimit: 3
       template:
         spec:
-          serviceAccountName: pipeline
+          serviceAccountName: {{ .Values.pipelineServiceAccount }}
           restartPolicy: Never
           initContainers:
           - name: fetch-spiffe-jwt
-            image: registry.redhat.io/zero-trust-workload-identity-manager/spiffe-helper-rhel9:v0.10.0
+            image: {{ .Values.images.spiffeHelper }}
             imagePullPolicy: IfNotPresent
             args:
               - '-config'
@@ -95,7 +95,7 @@ spec:
                 mountPath: /svids
           containers:
           - name: refresh-token
-            image: {{ .Values.registry.embeddedOCP.tokenRefresher.image }}
+            image: {{ .Values.images.ubi }}
             command: ["sh", "/app/refresh_registry_token.sh"]
             env:
               - name: VAULT_URL
@@ -107,11 +107,11 @@ spec:
               - name: VAULT_SECRET_KEY
                 value: {{ required "registry passwordVaultKey is required" $regPasswordKey }}
               - name: SA_NAME
-                value: pipeline
+                value: {{ .Values.pipelineServiceAccount }}
               - name: SA_NAMESPACE
                 value: {{ .Values.global.namespace }}
               - name: TOKEN_DURATION
-                value: {{ .Values.registry.embeddedOCP.tokenRefresher.tokenDuration | quote }}
+                value: {{ .Values.registry.embeddedOpenShift.tokenRefresher.tokenDuration | quote }}
               - name: JWT_TOKEN_FILE
                 value: /svids/jwt.token
               - name: CA_CERT
@@ -156,11 +156,11 @@ spec:
   activeDeadlineSeconds: 900
   template:
     spec:
-      serviceAccountName: pipeline
+      serviceAccountName: {{ .Values.pipelineServiceAccount }}
       restartPolicy: Never
       initContainers:
       - name: fetch-spiffe-jwt
-        image: registry.redhat.io/zero-trust-workload-identity-manager/spiffe-helper-rhel9:v0.10.0
+        image: {{ .Values.images.spiffeHelper }}
         imagePullPolicy: IfNotPresent
         args:
           - '-config'
@@ -178,7 +178,7 @@ spec:
             mountPath: /svids
       containers:
       - name: refresh-token
-        image: {{ .Values.registry.embeddedOCP.tokenRefresher.image }}
+        image: {{ .Values.images.ubi }}
         command: ["sh", "/app/refresh_registry_token.sh"]
         env:
           - name: VAULT_URL
@@ -190,11 +190,11 @@ spec:
           - name: VAULT_SECRET_KEY
             value: {{ required "registry passwordVaultKey is required" $regPasswordKey }}
           - name: SA_NAME
-            value: pipeline
+            value: {{ .Values.pipelineServiceAccount }}
           - name: SA_NAMESPACE
             value: {{ .Values.global.namespace }}
           - name: TOKEN_DURATION
-            value: {{ .Values.registry.embeddedOCP.tokenRefresher.tokenDuration | quote }}
+            value: {{ .Values.registry.embeddedOpenShift.tokenRefresher.tokenDuration | quote }}
           - name: JWT_TOKEN_FILE
             value: /svids/jwt.token
           - name: CA_CERT

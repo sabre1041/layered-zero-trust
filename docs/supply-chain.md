@@ -47,7 +47,7 @@ By default, ZTVP deploys a built-in Red Hat Quay registry. However, you can use 
          onMissingValue: error
    ```
 
-   > **Note**: This secret is only required for **BYO/external registries** (Option 2). **Built-in Quay** (Option 1) uses the auto-generated `quay-users` secret. **Embedded OCP registry** (Option 3) does not need a manual secret when the automatic token refresher is enabled (see [Embedded OCP Registry](#embedded-ocp-registry)) -- the refresher creates and rotates the Vault credential automatically.
+   > **Note**: This secret is only required for **BYO/external registries** (Option 2). **Built-in Quay** (Option 1) uses the auto-generated `quay-users` secret. **Embedded OpenShift registry** (Option 3) does not need a manual secret when the automatic token refresher is enabled (see [Embedded OpenShift Registry](#embedded-openshift-registry)) -- the refresher creates and rotates the Vault credential automatically.
    >
    > **Note**: Never commit `~/values-secrets.yaml` (or your local values-secret file) to git. This file contains sensitive credentials and should remain local.
 
@@ -59,20 +59,20 @@ By default, ZTVP deploys a built-in Red Hat Quay registry. However, you can use 
      registry:
        enabled: true
        domain: quay.io
-       org: your-org
+       repository: your-org/qtodo
        user: your-username
        vaultPath: "secret/data/hub/infra/registry/registry-user"
        passwordVaultKey: "registry-password"
    ```
 
-   See the **Registry Options** section at the top of `values-hub.yaml` for the full set of option blocks (built-in Quay, BYO, embedded OCP).
+   See the **Registry Options** section at the top of `values-hub.yaml` for the full set of option blocks (built-in Quay, BYO, embedded OpenShift).
 
 4. **Enable supply-chain-specific overrides** (if needed): The `supply-chain` application may need additional overrides depending on the registry type. These are set in the `supply-chain` overrides section of `values-hub.yaml`:
    * **Built-in Quay**: Enable `quay.enabled` (Quay user provisioner CronJob) and `registry.tlsVerify: "false"` (self-signed certs).
-   * **Embedded OCP**: Enable `registry.embeddedOCP.ensureImageNamespaceRBAC` (creates image namespace and push RBAC) and optionally `registry.embeddedOCP.tokenRefresher.enabled` (see [Embedded OCP Registry](#embedded-ocp-registry)).
+   * **Embedded OpenShift**: Enable `registry.embeddedOpenShift.ensureImageNamespaceRBAC` (creates image namespace and push RBAC) and optionally `registry.embeddedOpenShift.tokenRefresher.enabled` (see [Embedded OpenShift Registry](#embedded-openshift-registry)).
    * **BYO/External**: No extra overrides needed.
 
-   > **Note**: The qtodo chart automatically derives its image name from `global.registry.domain` and `global.registry.org` when `global.registry.enabled=true`. No per-app image override is needed.
+   > **Note**: The qtodo chart automatically derives its image from `global.registry.domain` and `global.registry.repository` when `global.registry.enabled=true`. No per-app image override is needed.
 
 ### Required Configuration
 
@@ -82,12 +82,12 @@ These parameters are set in the `global.registry` block at the top of `values-hu
 | ---------------------------------- | ------------------------------------ | ---------------------------------------------- |
 | `global.registry.enabled`          | Enable registry auth secret creation | `true`                                         |
 | `global.registry.domain`           | Registry hostname (REQUIRED)         | `quay.io`, `ghcr.io`, `registry.example.com`   |
-| `global.registry.org`              | Organization/namespace               | `my-org`                                       |
+| `global.registry.repository`       | Repository path (org/image)          | `ztvp/qtodo`, `my-org/my-app`                  |
 | `global.registry.user`             | Registry username                    | `my-robot-account`                             |
 | `global.registry.vaultPath`        | Vault path for registry password     | `secret/data/hub/infra/registry/registry-user` |
 | `global.registry.passwordVaultKey` | Key within the Vault secret          | `registry-password`                            |
 
-> **Note**: All registry types (built-in Quay, BYO, embedded OCP) use the same `global.registry` parameters. Both the `supply-chain` and `qtodo` charts fall back to these values when their local registry values are empty. See the Vault Paths table below for scenario-specific values.
+> **Note**: All registry types (built-in Quay, BYO, embedded OpenShift) use the same `global.registry` parameters. Both the `supply-chain` and `qtodo` charts fall back to these values when their local registry values are empty. See the Vault Paths table below for scenario-specific values.
 
 ### Vault Paths
 
@@ -97,57 +97,57 @@ Registry credentials are stored at different paths based on registry type:
 | ------------- | ---------------------------------------------- | -------------------- |
 | Built-in Quay | `secret/data/hub/infra/quay/quay-users`        | `quay-user-password` |
 | BYO Registry  | `secret/data/hub/infra/registry/registry-user` | `registry-password`  |
-| Embedded OCP  | `secret/data/hub/infra/registry/registry-user` | `registry-password`  |
+| Embedded OpenShift | `secret/data/hub/infra/registry/registry-user` | `registry-password`  |
 
 Set `global.registry.vaultPath` and `global.registry.passwordVaultKey` in the `global.registry` block to match your scenario. When `global.registry.enabled` is false or unset (default), no registry auth secret is created (fresh install state).
 
-The Vault policy `hub-supply-chain-jwt-secret` grants read access to both paths for the pipeline service account. For the embedded OCP registry, the policy also grants `create` and `update` capabilities on the registry path so the automatic token refresher can write fresh tokens back to Vault.
+The Vault policy `hub-supply-chain-jwt-secret` grants read access to both paths for the pipeline service account. For the embedded OpenShift registry, the policy also grants `create` and `update` capabilities on the registry path so the automatic token refresher can write fresh tokens back to Vault.
 
-### Embedded OCP Registry
+### Embedded OpenShift Registry
 
 To use the in-cluster OpenShift image registry instead of an external registry:
 
-1. **Uncomment the Option 3 `global.registry` block** in `values-hub.yaml` so `global.registry` points at the embedded registry (domain, org, vault paths). Use `user: _token` when using automatic token refresh (bearer tokens; the username is not significant to the registry).
+1. **Uncomment the Option 3 `global.registry` block** in `values-hub.yaml` so `global.registry` points at the embedded registry (domain, repository, vault paths). Use `user: _token` when using automatic token refresh (bearer tokens; the username is not significant to the registry).
 
    ```yaml
    global:
      registry:
        enabled: true
        domain: default-route-openshift-image-registry.apps.{{ .Values.global.clusterDomain }}
-       org: ztvp
+       repository: ztvp/qtodo
        user: _token
        vaultPath: "secret/data/hub/infra/registry/registry-user"
        passwordVaultKey: "registry-password"
    ```
 
-2. **Enable `registry.embeddedOCP.ensureImageNamespaceRBAC`** in the supply-chain overrides. The chart will automatically:
-   * Create the image namespace matching `global.registry.org` (e.g. `ztvp`)
+2. **Enable `registry.embeddedOpenShift.ensureImageNamespaceRBAC`** in the supply-chain overrides. The chart will automatically:
+   * Create the image namespace from the first component of `global.registry.repository` (e.g. `ztvp` from `ztvp/qtodo`)
    * Grant the pipeline ServiceAccount `system:image-builder` in that namespace
    * Enable the default route on the image registry (via a one-time Job)
 
 3. **Confirm the registry domain** is `default-route-openshift-image-registry.apps.<clusterDomain>` (set in `global.registry.domain` above).
 
-4. **Enable automatic token refresh** (recommended): Set `registry.embeddedOCP.tokenRefresher.enabled` to `true`. This deploys:
+4. **Enable automatic token refresh** (recommended): Set `registry.embeddedOpenShift.tokenRefresher.enabled` to `true`. This deploys:
    * A **CronJob** (`registry-token-refresher`) that runs every 6 hours. It uses a SPIFFE JWT to authenticate to Vault, creates a fresh `pipeline` ServiceAccount token via the Kubernetes TokenRequest API, and writes it to Vault.
    * A one-shot **Sync hook Job** (`registry-token-refresher-seed`) that seeds the initial token on first deploy so the pipeline is ready immediately.
 
-   When the token refresher is enabled, you do **not** need to manually store a token in `~/values-secrets.yaml` for the embedded OCP registry. The refresher handles credential lifecycle automatically.
+   When the token refresher is enabled, you do **not** need to manually store a token in `~/values-secrets.yaml` for the embedded OpenShift registry. The refresher handles credential lifecycle automatically.
 
    If you prefer manual token management instead, disable the token refresher and store the output of `oc whoami -t` as the `registry-password` value in `~/values-secrets.yaml`.
 
-Example `supply-chain` application overrides for embedded OCP (registry host, org, and Vault paths are normally taken from the `global.registry` block):
+Example `supply-chain` application overrides for embedded OpenShift (registry host, repository, and Vault paths are normally taken from the `global.registry` block):
 
 ```yaml
 overrides:
-  - name: registry.embeddedOCP.ensureImageNamespaceRBAC
+  - name: registry.embeddedOpenShift.ensureImageNamespaceRBAC
     value: "true"
-  - name: registry.embeddedOCP.tokenRefresher.enabled
+  - name: registry.embeddedOpenShift.tokenRefresher.enabled
     value: "true"
 ```
 
 ### Node-Level Image Pull Trust
 
-When using a registry behind the cluster ingress (Option 1: Built-in Quay or Option 3: Embedded OCP Registry), kubelet cannot pull images by default because the ingress certificate is self-signed and not trusted at the node level.
+When using a registry behind the cluster ingress (Option 1: Built-in Quay or Option 3: Embedded OpenShift Registry), kubelet cannot pull images by default because the ingress certificate is self-signed and not trusted at the node level.
 
 The `ztvp-certificates` application handles this by patching `image.config.openshift.io/cluster` with the ingress CA certificate for the configured registry hostnames. Enable it by uncommenting the `imagePullTrust` overrides in `values-hub.yaml`:
 
@@ -164,7 +164,7 @@ Set `<registry-hostname>` to match your registry option:
 | Option                  | Registry Hostname                                             |
 | ----------------------- | ------------------------------------------------------------- |
 | Option 1: Built-in Quay | `quay-registry-quay-quay-enterprise.apps.<clusterDomain>`     |
-| Option 3: Embedded OCP  | `default-route-openshift-image-registry.apps.<clusterDomain>` |
+| Option 3: Embedded OpenShift  | `default-route-openshift-image-registry.apps.<clusterDomain>` |
 
 > **Note**: Option 2 (BYO/External Registry) does not require `imagePullTrust` because external registries like quay.io and ghcr.io use publicly trusted certificates.
 
@@ -236,7 +236,7 @@ helm template supply-chain charts/supply-chain \
   --set pipelinerun.enabled=true \
   --set global.registry.enabled=true \
   --set global.registry.domain=quay-registry-quay-quay-enterprise.apps.example.com \
-  --set global.registry.org=ztvp \
+  --set global.registry.repository=ztvp/qtodo \
   --set global.registry.vaultPath=secret/data/hub/infra/quay/quay-users \
   --set global.registry.passwordVaultKey=quay-user-password \
   --set global.namespace=layered-zero-trust-hub \
@@ -250,7 +250,7 @@ helm template supply-chain charts/supply-chain \
   --set pipelinerun.enabled=true \
   --set global.registry.enabled=true \
   --set global.registry.domain=quay.io \
-  --set global.registry.org=your-org \
+  --set global.registry.repository=your-org/qtodo \
   --set global.registry.vaultPath=secret/data/hub/infra/registry/registry-user \
   --set global.registry.passwordVaultKey=registry-password \
   --set global.namespace=layered-zero-trust-hub \

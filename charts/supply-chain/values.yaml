@@ -8,7 +8,7 @@ global:
   registry:
     enabled: false
     domain: ""
-    org: ""
+    repository: ""
     user: ""
     vaultPath: ""
     passwordVaultKey: ""
@@ -36,7 +36,7 @@ qtodo:
 # ===========================================================================
 # QUAY USER PROVISIONER (only for built-in Quay registry)
 # When enabled, runs a CronJob that provisions users in the built-in Quay instance.
-# This is Quay-specific and not needed for BYO or embedded OCP registries.
+# This is Quay-specific and not needed for BYO or embedded OpenShift registries.
 # ===========================================================================
 quay:
   enabled: false
@@ -48,7 +48,7 @@ quay:
 # ===========================================================================
 # REGISTRY CONFIGURATION (option-agnostic)
 # Works for all registry types: built-in Quay, BYO (quay.io, ghcr.io, etc.),
-# or embedded OCP image registry. Set the values for your scenario.
+# or embedded OpenShift image registry. Set the values for your scenario.
 #
 # Scenario-specific values (set in values-hub.yaml overrides):
 #   Built-in Quay:
@@ -59,21 +59,20 @@ quay:
 #     domain: quay.io (or your registry hostname)
 #     vaultPath: secret/data/hub/infra/registry/registry-user
 #     passwordVaultKey: registry-password
-#   Embedded OCP:
+#   Embedded OpenShift:
 #     domain: default-route-openshift-image-registry.apps.<clusterDomain>
 #     vaultPath: secret/data/hub/infra/registry/registry-user
 #     passwordVaultKey: registry-password
-#     embeddedOCP.ensureImageNamespaceRBAC: true
+#     embeddedOpenShift.ensureImageNamespaceRBAC: true
 # ===========================================================================
 registry:
   # Set to true to create the registry auth secret (dockerconfigjson)
   enabled: false
   # Registry hostname (REQUIRED when enabled)
   domain: ""
-  # Organization/namespace within the registry (falls back to global.registry.org)
-  org: ""
-  # Repository name
-  repo: "qtodo"
+  # Repository path within the registry, e.g. "ztvp/qtodo"
+  # (falls back to global.registry.repository)
+  repository: ""
   # Whether to verify TLS when pushing to the registry
   tlsVerify: "true"
   # Registry username (falls back to global.registry.user)
@@ -84,16 +83,25 @@ registry:
   passwordVaultKey: ""
   # Secret name for registry auth (dockerconfigjson)
   authSecretName: "qtodo-registry-auth"
-  # Embedded OCP registry only: create image namespace (registry.org) and grant
+  # Embedded OpenShift registry only: create image namespace and grant
   # pipeline SA system:image-builder so the pipeline can push. Set to true only when
   # using the in-cluster OpenShift image registry; leave false for other registries.
-  embeddedOCP:
+  embeddedOpenShift:
     ensureImageNamespaceRBAC: false
+    # Service account name for the route-enabler Job
+    routeEnablerServiceAccount: "registry-route-enabler"
     tokenRefresher:
       enabled: false
-      image: registry.access.redhat.com/ubi9/ubi:9.7-1764794285
       schedule: "0 */6 * * *"
       tokenDuration: "172800"
+
+# Container images used by Jobs and CronJobs (externalized for overridability)
+images:
+  ubi: "registry.access.redhat.com/ubi9/ubi:9.7-1764794285"
+  spiffeHelper: "registry.redhat.io/zero-trust-workload-identity-manager/spiffe-helper-rhel9:v0.10.0"
+
+# Service account name used by pipeline Jobs (CronJob, seed Job)
+pipelineServiceAccount: "pipeline"
 
 # pipeline run configuration
 pipelinerun:

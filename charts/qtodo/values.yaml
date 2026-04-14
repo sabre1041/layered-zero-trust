@@ -7,7 +7,7 @@ global:
   registry:
     enabled: false
     domain: ""
-    org: ""
+    repository: ""
     user: ""
     vaultPath: ""
     passwordVaultKey: ""
