@@ -6,7 +6,7 @@ and produces up to 3 variants with the chosen registry option enabled:
 
   Option 1: Built-in Quay Registry
   Option 2: BYO / External Registry (e.g. quay.io, ghcr.io)
-  Option 3: Embedded OCP Image Registry
+  Option 3: Embedded OpenShift Image Registry
 
 Each variant also enables the common supply-chain stack (OpenShift Pipelines,
 ODF, NooBaa, RHTAS, RHTPA, and their namespaces/subscriptions/vault roles).
@@ -210,14 +210,14 @@ def enable_supply_chain_app(lines, option_num):
                     final.append(uncomment_line(line))
                     continue
 
-        # Option 3 (Embedded OCP): uncomment ensureImageNamespaceRBAC
+        # Option 3 (Embedded OpenShift): uncomment ensureImageNamespaceRBAC
         if option_num == 3:
-            if re.search(r"# - name: registry\.embeddedOCP", line):
+            if re.search(r"# - name: registry\.embeddedOpenShift", line):
                 final.append(uncomment_line(line))
                 continue
             if re.search(r"#\s+value:", line) and final:
                 prev = final[-1]
-                if "embeddedOCP" in prev:
+                if "embeddedOpenShift" in prev:
                     final.append(uncomment_line(line))
                     continue
 
@@ -451,7 +451,7 @@ def enable_image_pull_trust(lines, hostname):
 OPTION_LABELS = {
     1: "built-in-quay-registry",
     2: "byo-external-registry",
-    3: "embedded-ocp-registry",
+    3: "embedded-openshift-registry",
 }
 
 
