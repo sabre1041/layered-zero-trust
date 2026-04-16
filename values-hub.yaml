@@ -24,7 +24,7 @@ global:
   registry:
     enabled: true
     domain: quay-registry-quay-quay-enterprise.apps.{{ .Values.global.clusterDomain }}
-    org: ztvp
+    repository: ztvp/qtodo
     user: quay-user
     vaultPath: "secret/data/hub/infra/quay/quay-users"
     passwordVaultKey: "quay-user-password"
