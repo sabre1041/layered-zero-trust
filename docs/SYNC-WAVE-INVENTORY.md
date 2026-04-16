@@ -69,6 +69,10 @@ Every sync-wave in the repository, in order. **App** = hub-level Argo CD Applica
 | 46 | └ acs-secured-cluster | chart | secured-cluster-cr |
 | 46 | └ rhtas-operator | chart | securesign |
 | 48 | supply-chain | **App** | |
+| 48+0 | └ supply-chain | chart | registry-image-namespace (Namespace, RBAC), pipeline-sa, tasks, secrets (quay-pass, rhtpa-pass), quay-user, rhtas/rhtpa-config |
+| 48+1 | └ supply-chain | chart (hook) | enable-registry-default-route (Sync hook Job) |
+| 48+10 | └ supply-chain | chart (hook) | registry-token-refresher-seed (Sync hook Job — writes SA token to Vault) |
+| 48+15 | └ supply-chain | chart | qtodo-registry-auth ExternalSecret (reads token from Vault) |
 | 49 | └ rhtpa-operator | chart | spiffe-helper-config |
 | 51 | acs-policies | **App** | After ACS Central + Secured Cluster |
 | 51 | └ rhtpa-operator | chart | trusted-profile-analyzer (supporting objects) |
@@ -235,9 +239,16 @@ Charts marked **(external)** have been externalized to standalone repositories m
 
 ### supply-chain (`charts/supply-chain/templates/`) — App wave: 48
 
-| Resource | Old | Current |
-| --- | ---: | ---: |
-| workspaces.yaml | 20 | 51 |
+Resources without an explicit sync-wave default to wave 0. These include: pipeline-sa, pipeline-qtodo, tasks/*, secrets/qtodo-quay-pass, secrets/qtodo-rhtpa-pass, rhtas-config, rhtpa-config, quay/quay-user-cm, quay/quay-user-job.
+
+| Resource | Old | Current | Notes |
+| --- | ---: | ---: | --- |
+| registry-image-namespace.yaml (Namespace, RoleBinding, SA, ClusterRole, ClusterRoleBinding) | — | 0 | Foundation RBAC for embedded OpenShift registry |
+| enable-registry-default-route (Sync hook Job) | — | 1 | Exposes the OpenShift image registry route |
+| registry-token-refresher-seed (Sync hook Job) | — | 10 | Writes initial SA token to Vault |
+| qtodo-registry-auth ExternalSecret | — | 15 | Reads registry token from Vault; must run after seed Job |
+| workspaces.yaml | 20 | 51 | Pipeline PVCs |
+| pipelinerun-qtodo.yaml (PostSync hook) | — | — | Triggers pipeline run after sync completes |
 
 ### docs/DEVELOPMENT.md (example snippet, not deployed)
 

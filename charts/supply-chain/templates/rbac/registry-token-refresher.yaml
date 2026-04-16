@@ -145,7 +145,8 @@ metadata:
   name: registry-token-refresher-seed
   namespace: {{ .Values.global.namespace }}
   annotations:
-    # Run after wave 0 (ConfigMaps, RBAC, ztvp ns) and wave 1 (enable-registry-default-route hook).
+    # Run after wave 0 (ConfigMaps, RBAC) and wave 1 (enable-registry-default-route hook),
+    # but before the qtodo-registry-auth ExternalSecret at wave 15.
     argocd.argoproj.io/sync-wave: "10"
     argocd.argoproj.io/hook: Sync
     # HookSucceeded: remove completed Job so Argo does not sit on a stale object; BeforeHookCreation: clean retry/sync.
