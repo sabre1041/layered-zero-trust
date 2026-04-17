@@ -33,7 +33,7 @@ spire:
 #   registry:
 #     enabled: true
 #     domain: quay.io
-#     repository: ztvp/qtodo
+#     repository: your-org/qtodo
 #     user: your-username
 #     vaultPath: "secret/data/hub/infra/registry/registry-user"
 #     passwordVaultKey: "registry-password"
