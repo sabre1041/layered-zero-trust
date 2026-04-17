@@ -313,7 +313,7 @@ clusterGroup:
         # via rawResultStorage in scan-setting.yaml. The explicit PVC causes
         # ArgoCD 'Progressing' status on storage with WaitForFirstConsumer mode.
         - name: compliance.storage.enabled
-          value: false
+          value: "false"
     vault:
       name: vault
       namespace: vault
@@ -530,9 +530,9 @@ clusterGroup:
             - .imagePullSecrets[]|select(.name | contains("-dockercfg-"))
       overrides:
         - name: app.oidc.enabled
-          value: true
+          value: "true"
         - name: app.spire.enabled
-          value: true
+          value: "true"
         - name: app.vault.url
           value: https://vault.vault.svc.cluster.local:8200
         - name: app.vault.role
