@@ -1,21 +1,90 @@
 {{- if .Values.pipelinerun.enabled }}
 ---
-apiVersion: tekton.dev/v1beta1
-kind: PipelineRun
+apiVersion: v1
+kind: ServiceAccount
 metadata:
-  generateName: qtodo-supply-chain-
+  name: pipelinerun-launcher
+  namespace: {{ .Values.global.namespace }}
+  annotations:
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: pipelinerun-launcher
+  namespace: {{ .Values.global.namespace }}
+  annotations:
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+rules:
+- apiGroups: ["tekton.dev"]
+  resources: ["pipelineruns"]
+  verbs: ["create"]
+- apiGroups: [""]
+  resources: ["secrets"]
+  verbs: ["get"]
+  resourceNames: [{{ .Values.registry.authSecretName | quote }}]
+- apiGroups: [""]
+  resources: ["persistentvolumeclaims"]
+  verbs: ["get"]
+  resourceNames: ["qtodo-workspace-source"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: pipelinerun-launcher
+  namespace: {{ .Values.global.namespace }}
+  annotations:
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: pipelinerun-launcher
+subjects:
+- kind: ServiceAccount
+  name: pipelinerun-launcher
+  namespace: {{ .Values.global.namespace }}
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: launch-qtodo-pipeline
   namespace: {{ .Values.global.namespace }}
   annotations:
     argocd.argoproj.io/hook: PostSync
     argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
 spec:
-  pipelineRef:
-    name: qtodo-supply-chain
-  workspaces:
-    - name: qtodo-source
-      persistentVolumeClaim:
-        claimName: qtodo-workspace-source
-    - name: registry-auth-config
-      secret:
-        secretName: {{ .Values.registry.authSecretName }}
+  backoffLimit: 2
+  activeDeadlineSeconds: 120
+  template:
+    spec:
+      serviceAccountName: pipelinerun-launcher
+      restartPolicy: Never
+      containers:
+      - name: launcher
+        image: registry.redhat.io/openshift4/ose-tools-rhel9:latest
+        command:
+        - /bin/sh
+        - -ce
+        - |
+          cat <<'MANIFEST' | oc create -f -
+          apiVersion: tekton.dev/v1beta1
+          kind: PipelineRun
+          metadata:
+            generateName: qtodo-supply-chain-
+            namespace: {{ .Values.global.namespace }}
+          spec:
+            pipelineRef:
+              name: qtodo-supply-chain
+            workspaces:
+              - name: qtodo-source
+                persistentVolumeClaim:
+                  claimName: qtodo-workspace-source
+              - name: registry-auth-config
+                secret:
+                  secretName: {{ .Values.registry.authSecretName }}
+          MANIFEST
+          echo "PipelineRun created successfully."
 {{- end }}

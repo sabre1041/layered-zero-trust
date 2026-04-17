@@ -169,7 +169,7 @@ clusterGroup:
     # rhtas-operator:
     #   name: rhtas-operator
     #   namespace: openshift-operators
-    #   channel: stable
+    #   channel: stable-v1.3
     #   annotations:
     #     argocd.argoproj.io/sync-wave: "29"  # Install after Quay operator, before applications
     #   catalogSource: redhat-operators
@@ -542,6 +542,10 @@ clusterGroup:
         # Secure Supply Chain: when global.registry.enabled=true the chart
         # automatically derives the image from global.registry.domain/repository.
         # No override needed here.
+        # Seed image: mirror upstream qtodo image into the configured registry
+        # before the supply-chain pipeline runs (avoids ImagePullBackOff on first install)
+        # - name: app.seedImage.enabled
+        #   value: "true"
     # Secure Supply Chain - Uncomment to enable (required for Option 1, 2, or 3 registry flows in docs)
     # supply-chain:
     #  name: supply-chain
@@ -573,6 +577,9 @@ clusterGroup:
     #    #   value: "true"
     #    # Enable RHTPA SBOM upload
     #    # - name: rhtpa.enabled
+    #    #   value: "true"
+    #    # Auto-trigger pipeline run on ArgoCD sync
+    #    # - name: pipelinerun.enabled
     #    #   value: "true"
     #
     # ACS Central Services
@@ -633,34 +640,56 @@ clusterGroup:
         argocd.argoproj.io/sync-wave: "51"
   argoCD:
     resourceHealthChecks:
-      - check: |
-          local hs = {}
+    - check: |
+        local hs = {}
+        if obj.status ~= nil and obj.status.phase ~= nil then
+          if obj.status.phase == "Bound" then
+            hs.status = "Healthy"
+            hs.message = "PVC is bound"
+          elseif obj.status.phase == "Pending" then
+            hs.status = "Healthy"
+            hs.message = "Waiting for first consumer"
+          elseif obj.status.phase == "Lost" then
+            hs.status = "Degraded"
+            hs.message = "PVC is lost"
+          else
+            hs.status = "Progressing"
+            hs.message = obj.status.phase
+          end
+        else
           hs.status = "Progressing"
-          hs.message = "Waiting for status update."
-          if obj.status ~= nil then
-            if obj.status.conditions ~= nil then
-              for i, condition in ipairs(obj.status.conditions) do
-                if condition.type == "Done" and condition.status == "True" then
-                  hs.status = "Healthy"
-                  hs.message = condition.message
-                  return hs
-                end
-                if condition.type == "Started" and condition.status == "True" then
-                  hs.status = "Progressing"
-                  hs.message = "Realm import is running"
-                  return hs
-                end
-                if condition.type == "HasErrors" and condition.status == "True" then
-                  hs.status = "Degraded"
-                  hs.message = condition.message
-                  return hs
-                end
+          hs.message = "Waiting for PVC status"
+        end
+        return hs
+      kind: PersistentVolumeClaim
+    - check: |
+        local hs = {}
+        hs.status = "Progressing"
+        hs.message = "Waiting for status update."
+        if obj.status ~= nil then
+          if obj.status.conditions ~= nil then
+            for i, condition in ipairs(obj.status.conditions) do
+              if condition.type == "Done" and condition.status == "True" then
+                hs.status = "Healthy"
+                hs.message = condition.message
+                return hs
+              end
+              if condition.type == "Started" and condition.status == "True" then
+                hs.status = "Progressing"
+                hs.message = "Realm import is running"
+                return hs
+              end
+              if condition.type == "HasErrors" and condition.status == "True" then
+                hs.status = "Degraded"
+                hs.message = condition.message
+                return hs
               end
             end
           end
-          return hs
-        group: k8s.keycloak.org
-        kind: KeycloakRealmImport
+        end
+        return hs
+      group: k8s.keycloak.org
+      kind: KeycloakRealmImport
     resourceExclusions: |
       - apiGroups:
         - internal.open-cluster-management.io

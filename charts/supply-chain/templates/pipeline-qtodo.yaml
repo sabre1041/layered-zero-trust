@@ -309,3 +309,13 @@ spec:
           value: $(params.oidc-identity)
         - name: oidc-issuer
           value: $(params.oidc-issuer)
+
+  finally:
+    - name: restart-qtodo
+      when:
+        - input: $(tasks.qtodo-verify-image.status)
+          operator: in
+          values: ["Succeeded"]
+      taskRef:
+        name: restart-qtodo
+        kind: Task

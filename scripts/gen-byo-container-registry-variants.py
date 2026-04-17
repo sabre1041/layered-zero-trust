@@ -185,15 +185,21 @@ def enable_supply_chain_app(lines, option_num):
             final.append(line)
             continue
 
-        # Always uncomment RHTAS and RHTPA flags
-        if re.search(r"# - name: rhtas\.enabled", line) or re.search(
-            r"# - name: rhtpa\.enabled", line
+        # Always uncomment RHTAS, RHTPA, and pipelinerun flags
+        if (
+            re.search(r"# - name: rhtas\.enabled", line)
+            or re.search(r"# - name: rhtpa\.enabled", line)
+            or re.search(r"# - name: pipelinerun\.enabled", line)
         ):
             final.append(uncomment_line(line))
             continue
         if re.search(r"#\s+value:", line) and final:
             prev = final[-1]
-            if "rhtas.enabled" in prev or "rhtpa.enabled" in prev:
+            if (
+                "rhtas.enabled" in prev
+                or "rhtpa.enabled" in prev
+                or "pipelinerun.enabled" in prev
+            ):
                 final.append(uncomment_line(line))
                 continue
 
@@ -311,7 +317,7 @@ def apply_common_supply_chain(lines):
         lines,
         r"# rhtas-operator:",
         r"#\s*(rhtas-operator:|name: rhtas-operator"
-        r"|namespace: openshift-operators|channel: stable\s*$"
+        r"|namespace: openshift-operators|channel: stable-v1\.3"
         r"|annotations:"
         r"|argocd\.argoproj\.io/sync-wave.*29"
         r"|catalogSource: redhat-operators)",
@@ -380,6 +386,21 @@ def apply_common_supply_chain(lines):
         r"PLACEHOLDER_NEVER_MATCH",
         prev_re=r"Depends on:",
     )
+
+    # qtodo override: enable seed image job
+    new = []
+    for idx, line in enumerate(lines):
+        if re.search(r"# - name: app\.seedImage\.enabled", line):
+            new.append(uncomment_line(line))
+        elif (
+            re.search(r'#\s+value: "true"', line)
+            and new
+            and "app.seedImage.enabled" in new[-1]
+        ):
+            new.append(uncomment_line(line))
+        else:
+            new.append(line)
+    lines = new
 
     return lines
 

@@ -83,6 +83,14 @@ app:
     # QTodo OIDC secret path (app-level isolation)
     vaultPath: "secret/data/apps/qtodo/qtodo-oidc-client"
 
+  # Seed image Job: mirrors the upstream qtodo image into the configured
+  # registry so the deployment can pull before the supply-chain pipeline runs.
+  seedImage:
+    enabled: false
+    source: "quay.io/validatedpatterns/qtodo:latest"
+    tag: "latest"
+    image: "registry.redhat.io/openshift4/ose-tools-rhel9:latest"
+
   # Truststore configuration for Java CA certificates (PKCS12 format)
   truststore:
     enabled: true
