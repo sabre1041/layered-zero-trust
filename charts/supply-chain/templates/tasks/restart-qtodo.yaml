@@ -13,6 +13,10 @@ spec:
       script: |
         #!/usr/bin/env bash
         set -euo pipefail
+        if ! oc get deployment/qtodo -n qtodo >/dev/null 2>&1; then
+          echo "qtodo deployment not found in namespace qtodo -- skipping restart."
+          exit 0
+        fi
         echo "Restarting qtodo deployment to pull the latest image..."
         oc rollout restart deployment/qtodo -n qtodo
         echo "Waiting for rollout to complete..."

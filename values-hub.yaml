@@ -542,7 +542,7 @@ clusterGroup:
         # Secure Supply Chain: when global.registry.enabled=true the chart
         # automatically derives the image from global.registry.domain/repository.
         # No override needed here.
-        # Seed image: mirror upstream qtodo image into the configured registry
+        # Uncomment to seed the registry with the upstream qtodo image
         # before the supply-chain pipeline runs (avoids ImagePullBackOff on first install)
         # - name: app.seedImage.enabled
         #   value: "true"
@@ -578,7 +578,7 @@ clusterGroup:
     #    # Enable RHTPA SBOM upload
     #    # - name: rhtpa.enabled
     #    #   value: "true"
-    #    # Auto-trigger pipeline run on ArgoCD sync
+    #    # Uncomment to auto-trigger a pipeline run on every ArgoCD sync
     #    # - name: pipelinerun.enabled
     #    #   value: "true"
     #
@@ -648,7 +648,7 @@ clusterGroup:
               hs.message = "PVC is bound"
             elseif obj.status.phase == "Pending" then
               hs.status = "Healthy"
-              hs.message = "Waiting for first consumer"
+              hs.message = "PVC is pending"
             elseif obj.status.phase == "Lost" then
               hs.status = "Degraded"
               hs.message = "PVC is lost"

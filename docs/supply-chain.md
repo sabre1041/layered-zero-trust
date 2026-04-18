@@ -168,26 +168,11 @@ Set `<registry-hostname>` to match your registry option:
 
 > **Note**: Option 2 (BYO/External Registry) does not require `imagePullTrust` because external registries like quay.io and ghcr.io use publicly trusted certificates.
 
-### First-Install Image Availability
-
-On a fresh install, the configured registry does not yet contain a `qtodo` image because the supply-chain pipeline has not run yet. Without intervention the `qtodo` Deployment would enter `ImagePullBackOff` until the first pipeline completes.
-
-The `qtodo` chart includes a **registry-seed-image** Job (an ArgoCD `Sync` hook at wave 5) that mirrors the upstream image `quay.io/validatedpatterns/qtodo:latest` into the configured registry before the Deployment is created. This gives the application a working image immediately on first deploy.
-
-Key design points:
-
-* **Best-effort** -- the Job wraps all logic in a shell function and unconditionally exits 0. If mirroring fails (e.g., registry not ready, credentials unavailable), it logs a warning but never blocks the ArgoCD sync. The supply-chain pipeline is the authoritative image builder; the seed is only a first-install UX optimization.
-* **Registry readiness polling** -- for registries that may not be available immediately (built-in Quay, embedded OpenShift), the Job polls the registry endpoint for up to 8 minutes before attempting the mirror.
-* **Credential handling** -- the Job checks for the `qtodo-registry-auth` secret. If not found (e.g., ExternalSecret has not synced yet), it exits gracefully. For the embedded OpenShift registry, it uses the ServiceAccount token directly.
-* **Hook cleanup** -- `argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded` ensures old Jobs are cleaned up.
-
-The seed image is controlled by the `app.seedImage.enabled` flag in the qtodo chart values (enabled by default when `global.registry.enabled` is true).
-
 ### ArgoCD PVC Health Check
 
-The supply-chain chart creates a `PersistentVolumeClaim` (`qtodo-workspace-source`) for the pipeline workspace. On clusters using a `WaitForFirstConsumer` storage class, this PVC remains in `Pending` state until a pod is scheduled -- which is expected behavior, but ArgoCD reports it as `Progressing`, preventing the application from reaching `Healthy` status.
+The supply-chain chart creates a `PersistentVolumeClaim` (`qtodo-workspace-source`) for the pipeline workspace. Depending on the storage class, this PVC may remain in `Pending` state until a pod is scheduled -- which is expected behavior, but ArgoCD reports it as `Progressing`, preventing the application from reaching `Healthy` status.
 
-A custom `resourceHealthChecks` entry in `values-hub.yaml` teaches ArgoCD to treat `Pending` PVCs with `WaitForFirstConsumer` binding mode as `Healthy`:
+A custom `resourceHealthChecks` entry in `values-hub.yaml` teaches ArgoCD to treat `Pending` PVCs as `Healthy`:
 
 ```yaml
 resourceHealthChecks:
@@ -200,7 +185,7 @@ resourceHealthChecks:
           hs.message = "PVC is bound"
         elseif obj.status.phase == "Pending" then
           hs.status = "Healthy"
-          hs.message = "PVC is pending (WaitForFirstConsumer)"
+          hs.message = "PVC is pending"
         else
           hs.status = "Progressing"
           hs.message = "Waiting for PVC"
@@ -212,27 +197,15 @@ resourceHealthChecks:
       return hs
 ```
 
-This is important because the `PostSync` pipeline launcher hook (see below) only fires once the application is `Healthy`.
+## Pipeline
 
-## Automatic approach
+To build and certify the application, we will use _Red Hat OpenShift Pipelines_.
 
-To automate the application building and certifying process, we will use _Red Hat OpenShift Pipelines_.
+ZTVP creates a `Pipeline` in our cluster called **qtodo-supply-chain** that orchestrates the various tasks necessary to build the application from its source code, generate a container image, and publish the resulting image to the defined OCI registry. Within the pipeline, an SBOM containing the build's contents will be generated, binaries and the build attestation will be signed, and the validity of those signatures will be verified.
 
-ZTVP will create a `Pipeline` in our cluster called **qtodo-supply-chain** that will orchestrate the various tasks necessary to build the application from its source code, generate a container image, and publish the resulting image to the defined OCI registry. Within the pipeline, an SBOM containing the build's contents will be generated, binaries and the build attestation will be signed, and the validity of those signatures will be verified.
+### How to run the pipeline
 
-### Automatic pipeline trigger
-
-When the supply-chain application is deployed (or re-synced), a **PostSync** hook Job (`launch-qtodo-pipeline`) automatically creates a `PipelineRun` for the `qtodo-supply-chain` pipeline. This means the pipeline runs on every successful ArgoCD sync without manual intervention.
-
-The launcher Job includes a **registry readiness check**: before creating the PipelineRun, it polls the configured registry's `/v2/` endpoint for up to 8 minutes, waiting for a healthy HTTP response (200, 401, or 301). This prevents the pipeline from starting before the registry is available -- important on fresh installs where built-in Quay or the embedded OpenShift registry may still be starting up. If the registry is not ready after the timeout, the pipeline is launched anyway.
-
-The Job uses dedicated RBAC (ServiceAccount, Role, RoleBinding) scoped to creating PipelineRuns in the `layered-zero-trust-hub` namespace. All PostSync resources use `hook-delete-policy: BeforeHookCreation` so old resources are cleaned up on re-sync.
-
-> **Note**: ArgoCD `resourceExclusions` for `tekton.dev/PipelineRun` prevent direct PipelineRun manifests from being managed as hooks. The Job wrapper sidesteps this by creating the PipelineRun via `oc create` at runtime, outside ArgoCD's resource tracking.
-
-### How to run the pipeline manually
-
-The pipeline runs automatically on every sync (see above). If you need to trigger it manually, use one of the methods below.
+Once the supply-chain application has synced in ArgoCD, start the pipeline using one of the methods below.
 
 #### Using OpenShift Web Console
 
@@ -283,32 +256,6 @@ Using the previously created definition, start a new execution of the pipeline u
 oc create -f qtodo-pipeline.yaml
 ```
 
-#### Using Helm Template
-
-> **Note**: The `pipelinerun-qtodo.yaml` template renders a **Job** (the PostSync launcher) rather than a raw PipelineRun. For manual one-off runs, the CLI method above is simpler. The Helm approach is useful for inspecting or customizing the launcher Job.
-
-```shell
-helm template supply-chain charts/supply-chain \
-  --set pipelinerun.enabled=true \
-  --set global.registry.enabled=true \
-  --set global.registry.domain=quay.io \
-  --set global.registry.repository=your-org/qtodo \
-  --set global.namespace=layered-zero-trust-hub \
-  --show-only templates/pipelinerun-qtodo.yaml
-```
-
-This renders the launcher Job with its RBAC resources and embedded PipelineRun manifest. To apply it directly:
-
-```shell
-helm template supply-chain charts/supply-chain \
-  --set pipelinerun.enabled=true \
-  --set global.registry.enabled=true \
-  --set global.registry.domain=quay.io \
-  --set global.registry.repository=your-org/qtodo \
-  --set global.namespace=layered-zero-trust-hub \
-  --show-only templates/pipelinerun-qtodo.yaml | oc create -f -
-```
-
 You can review the current pipeline logs using the [Tekton CLI](https://tekton.dev/docs/cli/).
 
 ```shell
@@ -345,7 +292,7 @@ The pipeline we have prepared has the following steps:
 
 **Finally task:**
 
-* **restart-qtodo**. Runs after all tasks complete. If `qtodo-verify-image` succeeded, it restarts the `qtodo` Deployment (`oc rollout restart`) so the application picks up the newly built and signed image. This ensures the running application always reflects the latest pipeline output without manual intervention.
+* **restart-qtodo**. Runs after all tasks complete. If `qtodo-verify-image` succeeded and the `qtodo` Deployment exists, it restarts the Deployment (`oc rollout restart`) so the application picks up the newly built and signed image. If the Deployment is not yet present (e.g., the pipeline ran before the qtodo application was deployed), the task exits gracefully.
 
 ### Inspecting the results
 
