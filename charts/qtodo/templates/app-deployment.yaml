@@ -193,7 +193,7 @@ spec:
           readOnly: true
 {{- end }}
       - name: qtodo
-        image: {{ template "qtodo.image" (dict "value" .Values.app.images.main "context" $) }}
+        image: {{ template "qtodo.image" (dict "value" .Values.app.images.main "context" $ "useRegistry" true) }}
         imagePullPolicy: {{ .Values.app.images.main.pullPolicy }}
         ports:
         - containerPort: 8080

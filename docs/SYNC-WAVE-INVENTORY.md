@@ -46,7 +46,9 @@ Every sync-wave in the repository, in order. **App** = hub-level Argo CD Applica
 | 36 | └ keycloak | chart | keycloak.yaml (Keycloak CR) |
 | 36 | └ quay-registry | chart | object-bucket-claim |
 | 36 | └ acs-central | chart | admin-password-secret, central-htpasswd-external-secret, keycloak-client-secret-external-secret |
-| 36 | └ qtodo | chart | truststore-secret-external-secret |
+| 36 | └ qtodo | chart | truststore-secret-external-secret, registry-external-secret |
+| 38+0 | └ qtodo | chart | registry-seed SA, ClusterRole, ClusterRoleBinding |
+| 38+5 | └ qtodo | chart (hook) | registry-seed-image (Sync hook Job -- mirrors upstream image to configured registry) |
 | 37 | └ quay-registry | chart | quay-s3-setup-serviceaccount (5 resources) |
 | 37 | └ acs-central | chart | create-htpasswd-field (Job) |
 | 38 | qtodo | **App** | |
@@ -69,6 +71,10 @@ Every sync-wave in the repository, in order. **App** = hub-level Argo CD Applica
 | 46 | └ acs-secured-cluster | chart | secured-cluster-cr |
 | 46 | └ rhtas-operator | chart | securesign |
 | 48 | supply-chain | **App** | |
+| 48+0 | └ supply-chain | chart | registry-image-namespace (Namespace, RBAC), pipeline-sa, tasks (incl. restart-qtodo), secrets (quay-pass, rhtpa-pass), quay-user, rhtas/rhtpa-config, pipeline-qtodo-restarter (Role+RoleBinding in qtodo ns) |
+| 48+1 | └ supply-chain | chart (hook) | enable-registry-default-route (Sync hook Job) |
+| 48+10 | └ supply-chain | chart (hook) | registry-token-refresher-seed (Sync hook Job — writes SA token to Vault) |
+| 48+15 | └ supply-chain | chart | qtodo-registry-auth ExternalSecret (reads token from Vault) |
 | 49 | └ rhtpa-operator | chart | spiffe-helper-config |
 | 51 | acs-policies | **App** | After ACS Central + Secured Cluster |
 | 51 | └ rhtpa-operator | chart | trusted-profile-analyzer (supporting objects) |
@@ -226,7 +232,10 @@ Charts marked **(external)** have been externalized to standalone repositories m
 
 | Resource | Old | Current |
 | --- | ---: | ---: |
+| registry-seed-job.yaml (SA, ClusterRole, ClusterRoleBinding) | --- | 0 |
+| registry-seed-job.yaml (Sync hook Job) | --- | 5 |
 | truststore-secret-external-secret.yaml | 5 | 36 |
+| registry-external-secret.yaml | --- | 36 |
 | postgresql-statefulset.yaml | 10 | 41 |
 | postgresql-service.yaml | 10 | 41 |
 | qtodo-truststore-config.yaml | 10 | 41 |
@@ -235,9 +244,17 @@ Charts marked **(external)** have been externalized to standalone repositories m
 
 ### supply-chain (`charts/supply-chain/templates/`) — App wave: 48
 
-| Resource | Old | Current |
-| --- | ---: | ---: |
-| workspaces.yaml | 20 | 51 |
+Resources without an explicit sync-wave default to wave 0. These include: pipeline-sa, pipeline-qtodo, tasks/* (incl. restart-qtodo), secrets/qtodo-quay-pass, secrets/qtodo-rhtpa-pass, rhtas-config, rhtpa-config, quay/quay-user-cm, quay/quay-user-job, pipeline-qtodo-restarter (Role+RoleBinding).
+
+| Resource | Old | Current | Notes |
+| --- | ---: | ---: | --- |
+| registry-image-namespace.yaml (Namespace, RoleBinding, SA, ClusterRole, ClusterRoleBinding) | — | 0 | Foundation RBAC for embedded OpenShift registry |
+| enable-registry-default-route (Sync hook Job) | — | 1 | Exposes the OpenShift image registry route |
+| registry-token-refresher-seed (Sync hook Job) | — | 10 | Writes initial SA token to Vault |
+| qtodo-registry-auth ExternalSecret | — | 15 | Reads registry token from Vault; must run after seed Job |
+| workspaces.yaml | 20 | 51 | Pipeline PVCs |
+| pipelinerun-qtodo.yaml (PostSync hook Job + RBAC) | — | — | Job wraps `oc create` of PipelineRun (PipelineRun is excluded from ArgoCD tracking) |
+| pipeline-qtodo.yaml `finally` section | — | — | restart-qtodo Task runs after successful verify-image |
 
 ### docs/DEVELOPMENT.md (example snippet, not deployed)
 

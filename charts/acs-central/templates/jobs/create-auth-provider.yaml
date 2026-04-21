@@ -45,51 +45,50 @@ spec:
             - |
               #!/usr/bin/env bash
 
-              echo "🔄 Configuring Keycloak OIDC authentication provider..."
+              echo "Configuring Keycloak OIDC authentication provider..."
 
-              # Wait for ACS Central to be ready
-              echo "⏳ Waiting for ACS Central API to be available..."
-              max_retries=30
-              retry_count=0
-              until curl -sk -u "admin:$PASSWORD" https://central/v1/ping > /dev/null 2>&1; do
-                retry_count=$((retry_count + 1))
-                if [ $retry_count -ge $max_retries ]; then
-                  echo "❌ Timeout waiting for ACS Central API"
-                  exit 1
-                fi
-                echo "  Retry $retry_count/$max_retries..."
-                sleep 10
-              done
-              echo "✅ ACS Central API is ready"
+              wait_for_central() {
+                local max_retries=30
+                local retry_count=0
+                echo "Waiting for ACS Central API to be available..."
+                until curl -sk -u "admin:$PASSWORD" https://central/v1/ping > /dev/null 2>&1; do
+                  retry_count=$((retry_count + 1))
+                  if [ $retry_count -ge $max_retries ]; then
+                    echo "ERROR: Timeout waiting for ACS Central API"
+                    return 1
+                  fi
+                  echo "  Retry $retry_count/$max_retries..."
+                  sleep 10
+                done
+                echo "ACS Central API is ready"
+              }
 
-              # Wait for Keycloak OIDC discovery endpoint to be available
-              echo "⏳ Waiting for Keycloak OIDC discovery endpoint..."
+              wait_for_central || exit 1
+
+              echo "Waiting for Keycloak OIDC discovery endpoint..."
               max_retries=30
               retry_count=0
               until curl -sk "$KEYCLOAK_ISSUER/.well-known/openid-configuration" > /dev/null 2>&1; do
                 retry_count=$((retry_count + 1))
                 if [ $retry_count -ge $max_retries ]; then
-                  echo "❌ Timeout waiting for Keycloak OIDC discovery endpoint"
-                  echo "   Tried: $KEYCLOAK_ISSUER/.well-known/openid-configuration"
+                  echo "ERROR: Timeout waiting for Keycloak OIDC discovery endpoint"
+                  echo "  Tried: $KEYCLOAK_ISSUER/.well-known/openid-configuration"
                   exit 1
                 fi
                 echo "  Retry $retry_count/$max_retries..."
                 sleep 10
               done
-              echo "✅ Keycloak OIDC discovery endpoint is ready"
+              echo "Keycloak OIDC discovery endpoint is ready"
 
-              # Check if auth provider already exists
               AUTH_PROVIDERS=$(curl -sk -u "admin:$PASSWORD" https://central/v1/authProviders)
               if echo "$AUTH_PROVIDERS" | grep -q "OIDC"; then
-                echo "✅ OIDC provider already configured"
+                echo "OIDC provider already configured -- nothing to do"
                 exit 0
               fi
 
-              # Get ACS Central hostname (without https://)
               ACS_CENTRAL_HOSTNAME="$(oc get route central -n stackrox -o jsonpath='{.spec.host}')"
               echo "ACS Central hostname: $ACS_CENTRAL_HOSTNAME"
 
-              # Create OIDC provider JSON
               cat > /tmp/oidc-config.json << 'OIDCEOF'
               {
                 "name": "OIDC",
@@ -111,69 +110,92 @@ spec:
               }
               OIDCEOF
 
-              # Remove leading spaces from JSON
               sed -i 's/^              //g' /tmp/oidc-config.json
 
-              # Replace placeholders using printf and sed to safely handle special characters
-              # Escape special sed characters in variables: & \ / and newlines
-              ACS_CENTRAL_HOSTNAME_ESC=$(printf '%s\n' "$ACS_CENTRAL_HOSTNAME" | sed 's:[&\\/]:\\&:g')
-              KEYCLOAK_ISSUER_ESC=$(printf '%s\n' "$KEYCLOAK_ISSUER" | sed 's:[&\\/]:\\&:g')
-              KEYCLOAK_CLIENT_ID_ESC=$(printf '%s\n' "$KEYCLOAK_CLIENT_ID" | sed 's:[&\\/]:\\&:g')
-              KEYCLOAK_CLIENT_SECRET_ESC=$(printf '%s\n' "$KEYCLOAK_CLIENT_SECRET" | sed 's:[&\\/]:\\&:g')
-              CLAIM_NAME_ESC=$(printf '%s\n' "$CLAIM_NAME" | sed 's:[&\\/]:\\&:g')
-              CLAIM_EMAIL_ESC=$(printf '%s\n' "$CLAIM_EMAIL" | sed 's:[&\\/]:\\&:g')
-              CLAIM_GROUPS_ESC=$(printf '%s\n' "$CLAIM_GROUPS" | sed 's:[&\\/]:\\&:g')
-              CLAIM_ROLES_ESC=$(printf '%s\n' "$CLAIM_ROLES" | sed 's:[&\\/]:\\&:g')
+              escape_sed() { printf '%s\n' "$1" | sed 's:[&\\/]:\\&:g'; }
 
-              sed -i "s|UI_ENDPOINT_PLACEHOLDER|$ACS_CENTRAL_HOSTNAME_ESC|g" /tmp/oidc-config.json
-              sed -i "s|ISSUER_PLACEHOLDER|$KEYCLOAK_ISSUER_ESC|g" /tmp/oidc-config.json
-              sed -i "s|CLIENT_ID_PLACEHOLDER|$KEYCLOAK_CLIENT_ID_ESC|g" /tmp/oidc-config.json
-              sed -i "s|CLIENT_SECRET_PLACEHOLDER|$KEYCLOAK_CLIENT_SECRET_ESC|g" /tmp/oidc-config.json
-              sed -i "s|CLAIM_NAME_PLACEHOLDER|$CLAIM_NAME_ESC|g" /tmp/oidc-config.json
-              sed -i "s|CLAIM_EMAIL_PLACEHOLDER|$CLAIM_EMAIL_ESC|g" /tmp/oidc-config.json
-              sed -i "s|CLAIM_GROUPS_PLACEHOLDER|$CLAIM_GROUPS_ESC|g" /tmp/oidc-config.json
-              sed -i "s|CLAIM_ROLES_PLACEHOLDER|$CLAIM_ROLES_ESC|g" /tmp/oidc-config.json
+              sed -i "s|UI_ENDPOINT_PLACEHOLDER|$(escape_sed "$ACS_CENTRAL_HOSTNAME")|g" /tmp/oidc-config.json
+              sed -i "s|ISSUER_PLACEHOLDER|$(escape_sed "$KEYCLOAK_ISSUER")|g" /tmp/oidc-config.json
+              sed -i "s|CLIENT_ID_PLACEHOLDER|$(escape_sed "$KEYCLOAK_CLIENT_ID")|g" /tmp/oidc-config.json
+              sed -i "s|CLIENT_SECRET_PLACEHOLDER|$(escape_sed "$KEYCLOAK_CLIENT_SECRET")|g" /tmp/oidc-config.json
+              sed -i "s|CLAIM_NAME_PLACEHOLDER|$(escape_sed "$CLAIM_NAME")|g" /tmp/oidc-config.json
+              sed -i "s|CLAIM_EMAIL_PLACEHOLDER|$(escape_sed "$CLAIM_EMAIL")|g" /tmp/oidc-config.json
+              sed -i "s|CLAIM_GROUPS_PLACEHOLDER|$(escape_sed "$CLAIM_GROUPS")|g" /tmp/oidc-config.json
+              sed -i "s|CLAIM_ROLES_PLACEHOLDER|$(escape_sed "$CLAIM_ROLES")|g" /tmp/oidc-config.json
 
-              # Debug: Show the JSON payload
-              echo "📝 OIDC Configuration JSON:"
+              echo "OIDC Configuration JSON:"
               cat /tmp/oidc-config.json
               echo ""
 
-              # Verify Keycloak discovery endpoint one more time before creating provider
-              echo "🔍 Verifying Keycloak discovery endpoint..."
-              curl -sk "$KEYCLOAK_ISSUER/.well-known/openid-configuration" | head -20
-              echo ""
+              # --- Create OIDC auth provider with TLS retry logic ---
+              # On fresh clusters the proxy trustedCA injection may not have
+              # propagated to Central's mounted CA bundle yet.  If Central
+              # rejects the Keycloak issuer with "certificate signed by unknown
+              # authority", restart the Central deployment so it reloads the
+              # (now-correct) CA bundle, then retry.
+              create_oidc_provider() {
+                local http_code
+                http_code=$(curl -X POST -u "admin:$PASSWORD" -k https://central/v1/authProviders \
+                  -H "Content-Type: application/json" \
+                  --data @/tmp/oidc-config.json \
+                  -w "%{http_code}" \
+                  -o /tmp/output.json)
 
-              echo "📤 Creating auth provider in ACS..."
-              HTTP_CODE=$(curl -X POST -u "admin:$PASSWORD" -k https://central/v1/authProviders \
-                -H "Content-Type: application/json" \
-                --data @/tmp/oidc-config.json \
-                -w "%{http_code}" \
-                -o /tmp/output.json)
+                if [ "$http_code" = "200" ]; then
+                  return 0
+                fi
 
-              echo "📥 Response HTTP Code: $HTTP_CODE"
-              echo "📥 Response Body:"
-              cat /tmp/output.json
-              echo ""
+                local body
+                body=$(cat /tmp/output.json)
+                echo "Auth provider creation returned HTTP $http_code: $body"
 
-              if [ "$HTTP_CODE" != "200" ]; then
-                echo "❌ Failed to create auth provider (HTTP $HTTP_CODE)"
+                if echo "$body" | grep -q "certificate signed by unknown authority"; then
+                  return 2
+                fi
+                return 1
+              }
+
+              MAX_TLS_RETRIES=3
+              tls_attempt=0
+
+              echo "Creating auth provider in ACS..."
+              while true; do
+                create_oidc_provider
+                rc=$?
+
+                if [ $rc -eq 0 ]; then
+                  break
+                fi
+
+                if [ $rc -eq 2 ]; then
+                  tls_attempt=$((tls_attempt + 1))
+                  if [ $tls_attempt -gt $MAX_TLS_RETRIES ]; then
+                    echo "ERROR: Central still does not trust the ingress CA after $MAX_TLS_RETRIES restart(s)"
+                    exit 1
+                  fi
+                  echo "Central does not trust the ingress CA yet (attempt $tls_attempt/$MAX_TLS_RETRIES)"
+                  echo "Restarting Central to reload CA bundle..."
+                  oc rollout restart deployment/central -n stackrox
+                  oc rollout status deployment/central -n stackrox --timeout=180s
+                  wait_for_central || exit 1
+                  continue
+                fi
+
+                echo "ERROR: Failed to create auth provider"
                 exit 1
-              fi
+              done
 
-              # Extract provider ID
               AUTH_PROVIDER_ID=$(sed 's/,/\n/g' /tmp/output.json | grep -w id | awk -F\" '{ print $4 }')
 
               if [ -z "$AUTH_PROVIDER_ID" ]; then
-                echo "❌ Failed to extract auth provider ID"
+                echo "ERROR: Failed to extract auth provider ID"
                 cat /tmp/output.json
                 exit 1
               fi
 
-              echo "✅ Auth provider created with ID: $AUTH_PROVIDER_ID"
+              echo "Auth provider created with ID: $AUTH_PROVIDER_ID"
 
-              # Create admin role mapping for acs-admin role
-              echo "📝 Creating role mapping: acs-admin → Admin"
+              echo "Creating role mapping: acs-admin -> Admin"
               JSON_PAYLOAD="{\"roleName\":\"Admin\",\"props\":{\"authProviderId\":\"$AUTH_PROVIDER_ID\",\"key\":\"roles\",\"value\":\"acs-admin\"}}"
 
               HTTP_CODE=$(curl -X POST -u "admin:$PASSWORD" -k https://central/v1/groups \
@@ -182,17 +204,17 @@ spec:
                 -w "%{http_code}" \
                 -o /tmp/role-mapping.json)
 
-              echo "📥 Role mapping response (HTTP $HTTP_CODE):"
+              echo "Role mapping response (HTTP $HTTP_CODE):"
               cat /tmp/role-mapping.json
               echo ""
 
               if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "201" ]; then
-                echo "✅ Admin role mapping created for acs-admin"
+                echo "Admin role mapping created for acs-admin"
               else
-                echo "⚠️  Warning: Failed to create admin role mapping (HTTP $HTTP_CODE, may already exist)"
+                echo "WARNING: Failed to create admin role mapping (HTTP $HTTP_CODE, may already exist)"
               fi
 
-              echo "🎉 Keycloak OIDC configuration complete"
+              echo "Keycloak OIDC configuration complete"
           name: create-auth-provider
       dnsPolicy: ClusterFirst
       restartPolicy: Never

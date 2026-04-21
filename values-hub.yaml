@@ -11,6 +11,42 @@ spire:
         route.openshift.io/termination: reencrypt
         route.openshift.io/destination-ca-certificate-secret: spire-bundle
 
+# ===========================================================================
+# Global registry configuration (shared by qtodo and supply-chain)
+# Define once here; both charts fall back to global.registry.* when their
+# local registry values are empty.  Per-app overrides still take precedence.
+#
+# The gen-byo-container-registry-variants.py script uncomments the matching
+# OPTION block for each variant.
+# ===========================================================================
+# OPTION 1: Built-in Quay Registry
+# global:
+#   registry:
+#     enabled: true
+#     domain: quay-registry-quay-quay-enterprise.apps.{{ .Values.global.clusterDomain }}
+#     repository: ztvp/qtodo
+#     user: quay-user
+#     vaultPath: "secret/data/hub/infra/quay/quay-users"
+#     passwordVaultKey: "quay-user-password"
+# OPTION 2: BYO/External Registry (quay.io, ghcr.io, etc.)
+# global:
+#   registry:
+#     enabled: true
+#     domain: quay.io
+#     repository: your-org/qtodo
+#     user: your-username
+#     vaultPath: "secret/data/hub/infra/registry/registry-user"
+#     passwordVaultKey: "registry-password"
+# OPTION 3: Embedded OpenShift Registry
+# global:
+#   registry:
+#     enabled: true
+#     domain: default-route-openshift-image-registry.apps.{{ .Values.global.clusterDomain }}
+#     repository: ztvp/qtodo
+#     user: _token
+#     vaultPath: "secret/data/hub/infra/registry/registry-user"
+#     passwordVaultKey: "registry-password"
+
 clusterGroup:
   name: hub
   isHubCluster: true
@@ -133,7 +169,7 @@ clusterGroup:
     # rhtas-operator:
     #   name: rhtas-operator
     #   namespace: openshift-operators
-    #   channel: stable
+    #   channel: stable-v1.3
     #   annotations:
     #     argocd.argoproj.io/sync-wave: "29"  # Install after Quay operator, before applications
     #   catalogSource: redhat-operators
@@ -224,6 +260,15 @@ clusterGroup:
         - name: rollout.strategy
           value: labeled
         
+        # Node-level image pull trust for kubelet
+        # Required when pulling images from registries behind the cluster ingress
+        # (e.g. built-in Quay, embedded OpenShift registry). Patches image.config.openshift.io/cluster.
+        # Uncomment and set the registry hostname when enabling Option 1 (Quay) or Option 3 (embedded OpenShift).
+        # - name: imagePullTrust.enabled
+        #   value: "true"
+        # - name: imagePullTrust.registries[0]
+        #   value: default-route-openshift-image-registry.apps.{{ $.Values.global.clusterDomain }}
+        
         # Note: additionalCertificates (complex nested array) temporarily disabled
         # Need to find proper way to pass complex structures in Validated Patterns
     acm:
@@ -268,7 +313,7 @@ clusterGroup:
         # via rawResultStorage in scan-setting.yaml. The explicit PVC causes
         # ArgoCD 'Progressing' status on storage with WaitForFirstConsumer mode.
         - name: compliance.storage.enabled
-          value: false
+          value: "false"
     vault:
       name: vault
       namespace: vault
@@ -308,6 +353,9 @@ clusterGroup:
             path "secret/data/hub/infra/quay/*" {
               capabilities = ["read"]
             }
+            path "secret/data/hub/infra/registry/*" {
+              capabilities = ["read", "create", "update"]
+            }
             path "secret/data/hub/infra/rhtpa/rhtpa-oidc-cli" {
               capabilities = ["read"]
             }
@@ -328,10 +376,10 @@ clusterGroup:
           #   subject: spiffe://apps.{{ $.Values.global.clusterDomain }}/ns/trusted-profile-analyzer/sa/rhtpa
           #   policies:
           #     - hub-infra-rhtpa-jwt-secret
-          # Supply chain vault role (for Tekton pipelines)
+          # Supply chain vault role (for Tekton pipelines; enable with supply-chain app / Option 3 or BYO registry)
           # - name: supply-chain
           #   audience: supply-chain
-          #   subject: spiffe://apps.{{ $.Values.global.clusterDomain }}/ns/pipeline/sa/pipeline
+          #   subject: spiffe://apps.{{ $.Values.global.clusterDomain }}/ns/{{ $.Values.global.pattern }}-hub/sa/pipeline
           #   policies:
           #     - hub-supply-chain-jwt-secret
     # Shared Object Storage Backend
@@ -482,28 +530,23 @@ clusterGroup:
             - .imagePullSecrets[]|select(.name | contains("-dockercfg-"))
       overrides:
         - name: app.oidc.enabled
-          value: true
+          value: "true"
         - name: app.spire.enabled
-          value: true
+          value: "true"
         - name: app.vault.url
           value: https://vault.vault.svc.cluster.local:8200
         - name: app.vault.role
           value: qtodo
         - name: app.vault.secretPath
           value: secret/data/apps/qtodo/qtodo-db
-        # For Secure Supply Chain, we changed the qtodo image to use the one built in the secure supply chain
-        # - name: app.images.main.name
-        #   value: quay-registry-quay-quay-enterprise.apps.{{ $.Values.global.clusterDomain }}/ztvp/qtodo
-        # - name: app.images.main.version
-        #   value: latest
-        # Uncomment to enable registry authentication
-        # - name: app.images.main.registry.auth
-        #   value: true
-        # - name: app.images.main.registry.user
-        #   value: quay-user
-        # - name: app.images.main.registry.passwordVaultKey
-        #   value: quay-user-password
-    # Secure Supply Chain - Uncomment to enable
+        # Secure Supply Chain: when global.registry.enabled=true the chart
+        # automatically derives the image from global.registry.domain/repository.
+        # No override needed here.
+        # Uncomment to seed the registry with the upstream qtodo image
+        # before the supply-chain pipeline runs (avoids ImagePullBackOff on first install)
+        # - name: app.seedImage.enabled
+        #   value: "true"
+    # Secure Supply Chain - Uncomment to enable (required for Option 1, 2, or 3 registry flows in docs)
     # supply-chain:
     #  name: supply-chain
     #  project: hub
@@ -515,17 +558,29 @@ clusterGroup:
     #      jqPathExpressions:
     #        - .imagePullSecrets[]|select(.name | contains("-dockercfg-"))
     #  overrides:
-    #    # Don't forget to uncomment the RHTAS and RHTPA components in this same file
-    #    - name: rhtas.enabled
-    #      value: true
-    #    - name: rhtpa.enabled
-    #      value: true
-    #    - name: registry.tlsVerify
-    #      value: "false"
-    #    - name: registry.user
-    #      value: quay-admin
-    #    - name: registry.passwordVaultKey
-    #      value: quay-admin-password
+    #    # Registry credentials are inherited from global.registry.
+    #    # Only set app-specific overrides below.
+    #    # Built-in Quay: uncomment to enable the Quay user provisioner CronJob
+    #    # - name: quay.enabled
+    #    #   value: "true"
+    #    # Built-in Quay: self-signed certs require TLS verify off
+    #    # - name: registry.tlsVerify
+    #    #   value: "false"
+    #    # Embedded OpenShift (Option 3): create image namespace and grant push RBAC
+    #    # - name: registry.embeddedOpenShift.ensureImageNamespaceRBAC
+    #    #   value: "true"
+    #    # Embedded OpenShift (Option 3): periodically refresh pipeline SA token in Vault
+    #    # - name: registry.embeddedOpenShift.tokenRefresher.enabled
+    #    #   value: "true"
+    #    # Enable RHTAS signing
+    #    # - name: rhtas.enabled
+    #    #   value: "true"
+    #    # Enable RHTPA SBOM upload
+    #    # - name: rhtpa.enabled
+    #    #   value: "true"
+    #    # Uncomment to auto-trigger a pipeline run on every ArgoCD sync
+    #    # - name: pipelinerun.enabled
+    #    #   value: "true"
     #
     # ACS Central Services
     acs-central:
@@ -585,6 +640,28 @@ clusterGroup:
         argocd.argoproj.io/sync-wave: "51"
   argoCD:
     resourceHealthChecks:
+      - check: |
+          local hs = {}
+          if obj.status ~= nil and obj.status.phase ~= nil then
+            if obj.status.phase == "Bound" then
+              hs.status = "Healthy"
+              hs.message = "PVC is bound"
+            elseif obj.status.phase == "Pending" then
+              hs.status = "Healthy"
+              hs.message = "PVC is pending"
+            elseif obj.status.phase == "Lost" then
+              hs.status = "Degraded"
+              hs.message = "PVC is lost"
+            else
+              hs.status = "Progressing"
+              hs.message = obj.status.phase
+            end
+          else
+            hs.status = "Progressing"
+            hs.message = "Waiting for PVC status"
+          end
+          return hs
+        kind: PersistentVolumeClaim
       - check: |
           local hs = {}
           hs.status = "Progressing"

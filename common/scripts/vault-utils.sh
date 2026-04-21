@@ -32,9 +32,16 @@ EXTRA_VARS_FILE=$(mktemp)
 trap "rm -f ${EXTRA_VARS_FILE}" EXIT
 
 if [ "$(yq ".clusterGroup.applications.vault.jwt.enabled // \"false\"" "${MAIN_CLUSTERGROUP_FILE}")" == "true" ]; then
-  OCP_DOMAIN="$(oc get dns cluster -o jsonpath='{.spec.baseDomain}')"
-  OIDC_DISCOVERY_URL="$(yq ".clusterGroup.applications.vault.jwt.oidcDiscoveryUrl" "${MAIN_CLUSTERGROUP_FILE}" | sed "s/{{ \$.Values.global.clusterDomain }}/${OCP_DOMAIN}/g")"
-  JWT_ROLES="$(yq -o json ".clusterGroup.applications.vault.jwt.roles" "${MAIN_CLUSTERGROUP_FILE}" | sed "s/{{ \$.Values.global.clusterDomain }}/${OCP_DOMAIN}/g")"
+  OPENSHIFT_DOMAIN="$(oc get dns cluster -o jsonpath='{.spec.baseDomain}')"
+  GLOBAL_PATTERN="$(yq -r '.global.pattern // ""' "${PATTERNPATH}/values-global.yaml")"
+  GLOBAL_PATTERN="${GLOBAL_PATTERN:-${PATTERN_NAME}}"
+  # Replace Helm-style placeholders so Ansible/Jinja2 never sees "{{ $.Values... }}" (invalid Jinja2).
+  _subst_vault_yaml() {
+    sed -e "s/{{ \$.Values.global.clusterDomain }}/${OPENSHIFT_DOMAIN}/g" \
+        -e "s/{{ \$.Values.global.pattern }}/${GLOBAL_PATTERN}/g"
+  }
+  OIDC_DISCOVERY_URL="$(yq ".clusterGroup.applications.vault.jwt.oidcDiscoveryUrl" "${MAIN_CLUSTERGROUP_FILE}" | _subst_vault_yaml)"
+  JWT_ROLES="$(yq -o json ".clusterGroup.applications.vault.jwt.roles" "${MAIN_CLUSTERGROUP_FILE}" | _subst_vault_yaml)"
   # Extract JWT policies (policies ending in -jwt-secret)
   JWT_POLICIES="$(yq -o json ".clusterGroup.applications.vault.policies" "${MAIN_CLUSTERGROUP_FILE}" | jq '[.[] | select(.name | test("-jwt-secret$"))]')"
 
