@@ -11,14 +11,17 @@ spec:
   - Ingress
   - Egress
   ingress:
-  # Only allow inbound traffic from the OpenShift router (external user traffic via Route)
+  # Only allow inbound traffic from the OpenShift router.
+  # Router pods use hostNetwork:true so traffic arrives from node IPs, not pod IPs.
+  # OVN-K requires the policy-group.network.openshift.io/ingress label (empty value)
+  # to generate the correct ACLs for host-network ingress traffic.
   - ports:
     - protocol: TCP
       port: 8080
     from:
     - namespaceSelector:
         matchLabels:
-          network.openshift.io/policy-group: ingress
+          policy-group.network.openshift.io/ingress: ""
   egress:
   # DNS resolution via CoreDNS — OCP uses port 5353 (not 53)
   - ports:
@@ -47,10 +50,11 @@ spec:
         matchLabels:
           kubernetes.io/metadata.name: vault
   # Keycloak OIDC — external Route via OCP router (QUARKUS_OIDC_AUTH_SERVER_URL resolves to keycloak.apps.*)
+  # Same label as ingress: OVN-K special ACL for host-network router traffic
   - ports:
     - protocol: TCP
       port: 443
     to:
     - namespaceSelector:
         matchLabels:
-          network.openshift.io/policy-group: ingress
+          policy-group.network.openshift.io/ingress: ""
