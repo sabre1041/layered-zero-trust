@@ -49,12 +49,9 @@ spec:
     - namespaceSelector:
         matchLabels:
           kubernetes.io/metadata.name: vault
-  # Keycloak OIDC — external Route via OCP router (QUARKUS_OIDC_AUTH_SERVER_URL resolves to keycloak.apps.*)
-  # Same label as ingress: OVN-K special ACL for host-network router traffic
+  # Keycloak OIDC back-channel — external Route resolves to the router's load-balancer IP,
+  # which is not a pod IP in any namespace. namespaceSelector cannot match external IPs,
+  # so a port-only rule is required for the code-to-token exchange POST to work.
   - ports:
     - protocol: TCP
       port: 443
-    to:
-    - namespaceSelector:
-        matchLabels:
-          policy-group.network.openshift.io/ingress: ""
