@@ -542,7 +542,7 @@ clusterGroup:
         - name: app.oidc.authServerUrl
           value: https://login.microsoftonline.com/f95a88e6-e7bf-4d46-973f-0492826b9317/v2.0
         - name: app.oidc.clientId
-          value: qtodo
+          value: a50e8739-6fe6-41b8-aeee-2b6c8b5782f3
         - name: app.oidc.clientSecret.enabled
           value: true
         - name: app.oidc.clientSecret.vaultPath
