@@ -539,6 +539,14 @@ clusterGroup:
           value: qtodo
         - name: app.vault.secretPath
           value: secret/data/apps/qtodo/qtodo-db
+        - name: app.oidc.authServerUrl
+          value: https://login.microsoftonline.com/f95a88e6-e7bf-4d46-973f-0492826b9317/v2.0
+        - name: app.oidc.clientId
+          value: qtodo
+        - name: app.oidc.clientSecret.enabled
+          value: true
+        - name: app.oidc.clientSecret.vaultPath
+          value: secret/data/apps/qtodo/qtodo-oidc-entraid
         # Secure Supply Chain: when global.registry.enabled=true the chart
         # automatically derives the image from global.registry.domain/repository.
         # No override needed here.
