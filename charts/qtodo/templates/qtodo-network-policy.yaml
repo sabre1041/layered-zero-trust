@@ -11,18 +11,46 @@ spec:
   - Ingress
   - Egress
   ingress:
-  # Allow all ingress.
-  # OVN-Kubernetes limitation: when egress NetworkPolicy ACLs are active, ClusterIP-based
-  # response packets (DNS, service replies) bypass conntrack and are subject to strict
-  # ingress NP evaluation. Their source IPs cannot be matched portably.
-  - {}
+  # Only allow inbound traffic from the OpenShift router (external user traffic via Route)
+  - ports:
+    - protocol: TCP
+      port: 8080
+    from:
+    - namespaceSelector:
+        matchLabels:
+          network.openshift.io/policy-group: ingress
   egress:
-  # Allow all egress.
-  # OVN-Kubernetes limitation: port-based egress rules cause OVN-K to create restrictive
-  # ACLs that disrupt DNS SNAT (response packets appear to come from the CoreDNS pod IP
-  # instead of the ClusterIP, causing glibc's connected socket to reject them).
-  # Allow-all egress prevents OVN-K from creating restrictive ACLs, keeping DNS functional.
-  # Zero-trust security is enforced via Keycloak OIDC authentication on all application
-  # paths (/*), and ingress to qtodo-db is restricted to only qtodo pods.
-  # This policy satisfies both ACS "Has Ingress/Egress NetworkPolicy" compliance checks.
-  - {}
+  # DNS resolution via CoreDNS — OCP uses port 5353 (not 53)
+  - ports:
+    - protocol: UDP
+      port: 5353
+    - protocol: TCP
+      port: 5353
+    to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: openshift-dns
+  # PostgreSQL — qtodo-db pod in the same namespace
+  - ports:
+    - protocol: TCP
+      port: 5432
+    to:
+    - podSelector:
+        matchLabels:
+          app: qtodo-db
+  # Vault API — SPIFFE JWT auth for DB credentials retrieval
+  - ports:
+    - protocol: TCP
+      port: 8200
+    to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: vault
+  # Keycloak OIDC — external Route via OCP router (QUARKUS_OIDC_AUTH_SERVER_URL resolves to keycloak.apps.*)
+  - ports:
+    - protocol: TCP
+      port: 443
+    to:
+    - namespaceSelector:
+        matchLabels:
+          network.openshift.io/policy-group: ingress

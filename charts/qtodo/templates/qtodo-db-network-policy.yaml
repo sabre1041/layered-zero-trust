@@ -11,9 +11,7 @@ spec:
   - Ingress
   - Egress
   ingress:
-  # PostgreSQL access restricted to qtodo app pods only.
-  # Ingress NetworkPolicy is evaluated after DNAT (against real pod source IPs),
-  # so podSelector correctly restricts access to only qtodo pods.
+  # PostgreSQL — only from qtodo app pods in the same namespace
   - ports:
     - protocol: TCP
       port: 5432
@@ -21,15 +19,14 @@ spec:
     - podSelector:
         matchLabels:
           app: qtodo
-  # Allow DNS responses from CoreDNS pods — same reason as qtodo-ingress-network-policy.
-  - from:
+  egress:
+  # DNS resolution via CoreDNS — OCP uses port 5353 (not 53)
+  - ports:
+    - protocol: UDP
+      port: 5353
+    - protocol: TCP
+      port: 5353
+    to:
     - namespaceSelector:
         matchLabels:
           kubernetes.io/metadata.name: openshift-dns
-  egress:
-  # DNS resolution only (port-only rule — see qtodo-egress-network-policy for explanation)
-  - ports:
-    - protocol: UDP
-      port: 53
-    - protocol: TCP
-      port: 53
