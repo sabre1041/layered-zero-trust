@@ -451,7 +451,7 @@ clusterGroup:
       - name: rhtas.zeroTrust.email.issuer
         value: "https://login.microsoftonline.com/f95a88e6-e7bf-4d46-973f-0492826b9317/v2.0"
       - name: rhtas.fulcio.oidcIssuers.email.clientID
-        value: "ebba1c98-1b83-4388-ad8d-1257d1cf1ce7"
+        value: "da2e84e0-ca18-4898-ad26-ebc8d17ca317"
     noobaa-mcg:
       name: noobaa-mcg
       namespace: openshift-storage
@@ -489,7 +489,7 @@ clusterGroup:
       - name: rhtas.oidc.url
         value: "https://login.microsoftonline.com/f95a88e6-e7bf-4d46-973f-0492826b9317/v2.0"
       - name: rhtas.oidc.clientId
-        value: "ebba1c98-1b83-4388-ad8d-1257d1cf1ce7"
+        value: "da2e84e0-ca18-4898-ad26-ebc8d17ca317"
       - name: rhtas.oidc.clientSecretName
         value: ""
       - name: rhtas.oidc.issuer
