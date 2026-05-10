@@ -73,11 +73,13 @@ central:
   exposure:
     route:
       enabled: true
+      host: "" # Autogenerate if not specified
       tls:
         enabled: true
         termination: passthrough
       reencrypt:
         enabled: true
+        host: "" # Autogenerate if not specified
     loadBalancer:
       enabled: false
 

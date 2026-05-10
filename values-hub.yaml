@@ -600,6 +600,8 @@ clusterGroup:
           value: "ztvp"
         - name: integration.keycloak.clientId
           value: "acs-central"
+        - name: central.exposure.route.reencrypt.host
+          value: "central.{{ $.Values.global.localClusterDomain }}"
     # ACS to scan images stored in Quay (Uncomment to enable)
     #    - name: integration.quay.enabled
     #      value: "true"

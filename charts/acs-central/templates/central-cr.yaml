@@ -21,6 +21,9 @@ spec:
         port: 443
       route:
         enabled: {{ .Values.central.exposure.route.enabled }}
+        {{- if .Values.central.exposure.route.host }}
+        host: {{ .Values.central.exposure.route.host }}
+        {{- end }}
         {{- if .Values.central.exposure.route.reencrypt.enabled }}
         reencrypt:
           enabled: true
