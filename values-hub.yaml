@@ -516,7 +516,7 @@ clusterGroup:
       - name: rhtas.oidc.identity
         value: "andy.block@gmail.com"
       - name: rhtpa.oidc.url
-        value: "https://login.microsoftonline.com/f95a88e6-e7bf-4d46-973f-0492826b9317/v2.0"
+        value: "https://login.microsoftonline.com/f95a88e6-e7bf-4d46-973f-0492826b9317"
       - name: rhtpa.oidc.clientId
         value: "341c0e87-fca2-48ff-b7eb-e78e86c99520"
       - name: rhtpa.oidc.apiId
