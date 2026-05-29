@@ -11,5 +11,15 @@ cleanup:
 # Values passed through to the rhbk subchart.
 rhbk:
   externalSecrets:
-    oneShot: true
-    secretCleanupLabel: "validatedpatterns.io/cleanup"
+    keycloakUsers:
+      creationPolicy: "Orphan"
+      deletionPolicy: "Retain"
+      refreshPolicy: "OnChange"
+      metadata:
+        annotations:
+          argocd.argoproj.io/hook: Sync
+          argocd.argoproj.io/hook-delete-policy: HookSucceeded
+          argocd.argoproj.io/sync-options: PrunePropagationPolicy=orphan
+      targetMetadata:
+        labels:
+          validatedpatterns.io/cleanup: delete
