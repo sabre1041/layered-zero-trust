@@ -499,6 +499,24 @@ clusterGroup:
           value: qtodo
         - name: app.vault.secretPath
           value: secret/data/apps/qtodo/qtodo-db
+        # Set Entra ID as the OIDC provider (enables client assertion)
+        - name: app.oidc.provider
+          value: "entraid"
+        # Entra ID tenant ID (from Azure portal)
+        - name: app.oidc.entraid.tenantId
+          value: "f95a88e6-e7bf-4d46-973f-0492826b9317"
+        # Application (client) ID from Azure portal
+        - name: app.oidc.clientId
+          value: "52c9b70c-b29e-4086-ab73-1cf08f1ab2e2"
+        # API identifier (Application ID URI) - used as JWT audience for client assertion
+        - name: app.oidc.entraid.audience
+          value: "api://AzureADTokenExchange"
+        # Enable client assertion (SPIFFE JWT) - recommended for zero-trust
+        - name: app.oidc.clientAssertion.enabled
+          value: "true"
+        # Disable client secret when using client assertion
+        - name: app.oidc.clientSecret.enabled
+          value: "false"
         # Secure Supply Chain: when global.registry.enabled=true the chart
         # automatically derives the image from global.registry.domain/repository.
         # No override needed here.
