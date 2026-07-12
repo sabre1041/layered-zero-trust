@@ -32,7 +32,7 @@ vault_jwt_policies:
       }
 vault_jwt_roles:
   - name: qtodo
-    audience: https://keycloak.apps.{{ $.Values.global.clusterDomain }}/realms/ztvp
+    audience: api://AzureADTokenExchange
     subject: spiffe://apps.{{ $.Values.global.clusterDomain }}/ns/qtodo/sa/qtodo
     policies:
       - apps-qtodo-jwt-secret
