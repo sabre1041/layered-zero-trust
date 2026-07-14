@@ -489,6 +489,10 @@ clusterGroup:
           jqPathExpressions:
             - .imagePullSecrets[]|select(.name | contains("-dockercfg-"))
       overrides:
+        - name: app.images.main.name
+          value: "quay.io/ablock/qtodo"
+        - name: app.images.main.version
+          value: "AADSTS7000110"
         - name: app.oidc.enabled
           value: "true"
         - name: app.spire.enabled
