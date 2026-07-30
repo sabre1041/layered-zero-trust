@@ -1,0 +1,16 @@
+apiVersion: v2
+name: qtodo-db
+description: PostgreSQL database for the qtodo application
+type: application
+version: 0.0.1
+appVersion: "1.0.0"
+maintainers:
+  - name: Zero Trust Valdated Patterns Team
+    email: ztvp-arch-group@redhat.com
+keywords:
+  - postgresql
+  - database
+  - qtodo
+  - pattern
+annotations:
+  category: Database
