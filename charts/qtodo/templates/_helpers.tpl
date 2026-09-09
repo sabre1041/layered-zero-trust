@@ -88,3 +88,34 @@ Returns the port the application should list on
 {{ .Values.app.insecurePort }}
 {{- end -}}
 {{- end -}}
+
+{{/*
+True when the shared secondary UDN is enabled (bool or string "true").
+*/}}
+{{- define "qtodo.udn.enabled" -}}
+{{- if eq (.Values.app.udn.enabled | default false | toString) "true" -}}
+true
+{{- end -}}
+{{- end -}}
+
+{{/*
+True when the CNO patch Job should run (UDN + MultiNetworkPolicy enabled,
+and the job itself is not disabled because another component manages CNO).
+*/}}
+{{- define "qtodo.udn.multiNetworkPolicyJob.enabled" -}}
+{{- if and (include "qtodo.udn.enabled" .) (eq (.Values.app.udn.networkPolicy.enabled | default false | toString) "true") (ne (.Values.app.udn.multiNetworkPolicyJob.enabled | toString) "false") -}}
+true
+{{- end -}}
+{{- end -}}
+
+{{/*
+PostgreSQL host: static UDN IP when UDN is enabled (secondary UDNs do not
+support Kubernetes Services), otherwise the cluster-network Service DNS name.
+*/}}
+{{- define "qtodo.dbHost" -}}
+{{- if include "qtodo.udn.enabled" . -}}
+{{- .Values.app.udn.dbIP -}}
+{{- else -}}
+{{- .Values.postgresql.host -}}
+{{- end -}}
+{{- end -}}
